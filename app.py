@@ -302,7 +302,7 @@ for ticket in tickets_exclusao:
     
     # Adicionar dados à tabela
     tabela_dados.append({
-        'Data Envio': created_at.strftime('%d de %b. de %Y'),
+        'Data Envio': created_at,
         'Etapa agrupada': status,
         'Duração em Horas': round(duracao_horas, 1) if isinstance(duracao_horas, (float, int)) else '-',
         'Data término': data_termino
@@ -313,10 +313,16 @@ df_tabela = pd.DataFrame(tabela_dados)
 
 # Verificar se o DataFrame não está vazio antes de exibir
 if not df_tabela.empty:
-    # Definindo a primeira coluna como índice para ocultar o índice padrão e ocupando a largura total
-    st.dataframe(df_tabela.set_index(df_tabela.columns[0]), use_container_width=True)
+    # Ordenar pela coluna 'Data Envio' do mais recente para o menos recente
+    df_tabela = df_tabela.sort_values(by='Data Envio', ascending=False)
+    
+    # Formatando 'Data Envio' para string novamente para exibição
+    df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d de %b. de %Y')
+    
+    # Exibir o DataFrame com a primeira coluna como índice
+    st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
 else:
-    st.warning("Nenhum ticket de exclusão encontrado.")
+    st.write("Nenhuma solicitação de exclusão encontrada.")
 
 # Gráfico de Linha de Tendência de Atendimentos por Dia
 st.markdown("<h4 style='text-align: center;'>Linha de Tendência de Atendimentos por Dia</h4>", unsafe_allow_html=True)
