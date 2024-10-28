@@ -1,4 +1,8 @@
-streamlit
+streamlit==1.29.0
+streamlit-cookies-manager==0.2.0
+streamlit-login-auth-ui==0.2.0
+streamlit-lottie==0.0.5
+streamlit-option-menu==0.3.6
 pandas
 Pillow
 matplotlib
