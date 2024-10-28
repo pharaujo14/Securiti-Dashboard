@@ -104,18 +104,14 @@ def get_ticket_data(ticket_id):
         print("Erro ao fazer a requisição:", e)
         return None
 
-def atualizar_dados(collection, progresso):
+def atualizar_dados(collection, progresso, collection_historico):
     dados_api = buscar_dados_api()
     dados_mongo = buscar_dados(collection)
-
     add_mongo = calcula_diferenca(dados_api, dados_mongo)
 
-    total_dados = len(add_mongo)  # Total de dados a serem processados
-
+    total_dados = len(add_mongo)
     for index, id in enumerate(add_mongo):
         dado = get_ticket_data(id)
-
-        # Seleciona apenas os campos necessários
         dado_filtrado = {
             "org_unit_name": dado.get("org_unit_name"),
             "type_tags": dado.get("type_tags"),
@@ -126,14 +122,14 @@ def atualizar_dados(collection, progresso):
             "organizacao": dado.get("organizacao")
         }
 
-        # Insere no MongoDB somente se o ID ainda não existe
         if not collection.find_one({"id": dado_filtrado["id"]}):  
             collection.insert_one(dado_filtrado)
 
-        # Atualiza a barra de progresso
         percent = (index + 1) / total_dados
-        progresso.progress(percent)  # Atualiza o progresso no Streamlit
+        progresso.progress(percent)
 
+    # Registrar a atualização no histórico
+    registrar_atualizacao(collection_historico)
     print("Dados atualizados com sucesso no MongoDB.")
 
 def buscar_dados(collection):
@@ -160,3 +156,10 @@ def calcula_diferenca(dados_api, dados_mongo):
         ids_mongo.add(dado["id"])
 
     return list(ids_api.difference(ids_mongo))
+
+def registrar_atualizacao(collection_historico):
+    """Registra a data e hora da última atualização na coleção 'historico_atualizacoes'."""
+    data_atualizacao = {
+        "data_hora": datetime.now()
+    }
+    collection_historico.insert_one(data_atualizacao)

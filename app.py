@@ -31,6 +31,17 @@ logo_century = Image.open("logo_century.png")
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
 
+
+# Buscar a última atualização
+def obter_ultima_atualizacao(collection_historico):
+    ultimo_registro = collection_historico.find_one(sort=[("data_hora", -1)])
+    if ultimo_registro:
+        return ultimo_registro["data_hora"].strftime('%d/%m/%Y %H:%M:%S')
+    return "Nunca atualizado"
+
+# Conectar à collection de histórico de atualizações
+collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']
+
 # Definir as colunas da primeira linha do layout
 col1, col2, col3 = st.columns([1, 3, 1])
 
@@ -54,16 +65,16 @@ with st.sidebar:
 
     # Botão para atualizar dados
     if st.button('Atualizar Dados'):
-        # Cria a barra de progresso
         progresso = st.progress(0)
-
-        # Atualiza os dados passando a barra de progresso
-        atualizar_dados(collection, progresso)
-        
+        atualizar_dados(collection, progresso, collection_historico)
         st.success("Atualização concluída com sucesso!")
 
         # Após a atualização, busca os dados novamente
         dados = buscar_dados(collection)  # Atualiza a variável dados após a inserção
+    
+    # Exibir a última atualização
+    ultima_atualizacao = obter_ultima_atualizacao(collection_historico)
+    st.write(f"Última atualização: {ultima_atualizacao}")
 
     # Uso da variável dados
     if dados:  # Verifica se há dados
