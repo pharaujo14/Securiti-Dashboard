@@ -109,6 +109,22 @@ def get_ticket_data(ticket_id):
 def atualizar_dados(collection, progresso, collection_historico):
     dados_api = buscar_dados_api()
     dados_mongo = buscar_dados(collection)
+
+    # IDs com alteração no status
+    ids_status_alterados = calcula_diferenca_status(dados_api, dados_mongo)
+    
+    # Atualiza o campo status e published_at para os IDs que mudaram
+    for id_alterado in ids_status_alterados:
+        dado = get_ticket_data(id_alterado)
+        novo_status = ajustar_status(dado.get("status"))
+        novo_published_at = dado.get("published_at")
+
+        collection.update_one(
+            {"id": id_alterado},
+            {"$set": {"status": novo_status, "published_at": novo_published_at}}
+        )
+
+    # IDs que precisam ser adicionados ao MongoDB
     add_mongo = calcula_diferenca(dados_api, dados_mongo)
 
     total_dados = len(add_mongo)
@@ -158,6 +174,24 @@ def calcula_diferenca(dados_api, dados_mongo):
         ids_mongo.add(dado["id"])
 
     return list(ids_api.difference(ids_mongo))
+
+def calcula_diferenca_status(dados_api, dados_mongo):
+    # Cria um dicionário para os dados do MongoDB, mapeando IDs para o status
+    status_mongo = {dado["id"]: dado["status"] for dado in dados_mongo}
+
+    ids_status_alterados = []
+
+    for dado in dados_api:
+        id_atual = dado["id"]
+        status_api = dado["status"]
+
+        # Verifica se o ID existe em dados_mongo e se o status é diferente
+        if id_atual in status_mongo and status_api != status_mongo[id_atual]:
+            ids_status_alterados.append(id_atual)
+
+    print(ids_status_alterados)
+    return ids_status_alterados
+
 
 def registrar_atualizacao(collection_historico):
     """Registra a data e hora da última atualização na coleção 'historico_atualizacoes' no horário UTC."""
