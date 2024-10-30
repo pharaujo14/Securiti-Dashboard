@@ -1,16 +1,20 @@
 import streamlit as st
 import pandas as pd
-from PIL import Image
-from api import atualizar_dados, buscar_dados
-from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from matplotlib.dates import DateFormatter
 import matplotlib.dates as mdates
 import seaborn as sns
 import altair as alt
+import pytz
+
+from PIL import Image
+from datetime import datetime, timedelta
+
+from matplotlib.ticker import MaxNLocator
+from matplotlib.dates import DateFormatter
+
 from conectaBanco import conectaBanco
 from login import login, is_authenticated
+from api import atualizar_dados, buscar_dados
 
 # Verifica se o usuário está autenticado
 if not is_authenticated():
@@ -34,10 +38,15 @@ st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32
 
 # Buscar a última atualização
 def obter_ultima_atualizacao(collection_historico):
+    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
     ultimo_registro = collection_historico.find_one(sort=[("data_hora", -1)])
-    if ultimo_registro:
-        return ultimo_registro["data_hora"].strftime('%d/%m/%Y %H:%M:%S')
+    if ultimo_registro and isinstance(ultimo_registro["data_hora"], datetime):
+        # Garante que o datetime está em UTC e converte para o fuso de Brasília
+        data_utc = ultimo_registro["data_hora"].replace(tzinfo=pytz.utc)
+        data_brasilia = data_utc.astimezone(fuso_horario_brasilia)
+        return data_brasilia.strftime('%d/%m/%Y %H:%M:%S')
     return "Nunca atualizado"
+
 
 # Conectar à collection de histórico de atualizações
 collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']

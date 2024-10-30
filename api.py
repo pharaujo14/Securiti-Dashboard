@@ -1,7 +1,9 @@
 import requests
 import json
-from datetime import datetime
 import streamlit as st
+import pytz
+
+from datetime import datetime
 
 # Função para ajustar o status
 def ajustar_status(status_code):
@@ -158,8 +160,12 @@ def calcula_diferenca(dados_api, dados_mongo):
     return list(ids_api.difference(ids_mongo))
 
 def registrar_atualizacao(collection_historico):
-    """Registra a data e hora da última atualização na coleção 'historico_atualizacoes'."""
+    """Registra a data e hora da última atualização na coleção 'historico_atualizacoes' no horário UTC."""
+    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
+    data_atualizacao_brasilia = datetime.now(fuso_horario_brasilia)
+    data_atualizacao_utc = data_atualizacao_brasilia.astimezone(pytz.utc)  # Converte para UTC
+
     data_atualizacao = {
-        "data_hora": datetime.now()
+        "data_hora": data_atualizacao_utc
     }
     collection_historico.insert_one(data_atualizacao)
