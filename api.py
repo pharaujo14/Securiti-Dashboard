@@ -106,7 +106,7 @@ def get_ticket_data(ticket_id):
         print("Erro ao fazer a requisição:", e)
         return None
 
-def atualizar_dados(collection, progresso, collection_historico):
+def atualizar_dados(collection):
     dados_api = buscar_dados_api()
     dados_mongo = buscar_dados(collection)
 
@@ -143,11 +143,6 @@ def atualizar_dados(collection, progresso, collection_historico):
         if not collection.find_one({"id": dado_filtrado["id"]}):  
             collection.insert_one(dado_filtrado)
 
-        percent = (index + 1) / total_dados
-        progresso.progress(percent)
-
-    # Registrar a atualização no histórico
-    registrar_atualizacao(collection_historico)
     print("Dados atualizados com sucesso no MongoDB.")
 
 def buscar_dados(collection):
@@ -191,15 +186,3 @@ def calcula_diferenca_status(dados_api, dados_mongo):
 
     print(ids_status_alterados)
     return ids_status_alterados
-
-
-def registrar_atualizacao(collection_historico):
-    """Registra a data e hora da última atualização na coleção 'historico_atualizacoes' no horário UTC."""
-    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
-    data_atualizacao_brasilia = datetime.now(fuso_horario_brasilia)
-    data_atualizacao_utc = data_atualizacao_brasilia.astimezone(pytz.utc)  # Converte para UTC
-
-    data_atualizacao = {
-        "data_hora": data_atualizacao_utc
-    }
-    collection_historico.insert_one(data_atualizacao)

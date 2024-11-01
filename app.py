@@ -1,21 +1,16 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-import altair as alt
 import pytz
 
 from PIL import Image
-from datetime import datetime, timedelta
-
-from matplotlib.ticker import MaxNLocator
-from matplotlib.dates import DateFormatter
+from datetime import datetime
 
 from conectaBanco import conectaBanco
 from login import login, is_authenticated
 from api import atualizar_dados, buscar_dados
 from graficos import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
+from pdf_generator import gerar_pdf
+
 
 # Verifica se o usuário está autenticado
 if not is_authenticated():
@@ -36,22 +31,6 @@ logo_century = Image.open("logo_century.png")
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
 
-
-# Buscar a última atualização
-def obter_ultima_atualizacao(collection_historico):
-    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
-    ultimo_registro = collection_historico.find_one(sort=[("data_hora", -1)])
-    if ultimo_registro and isinstance(ultimo_registro["data_hora"], datetime):
-        # Garante que o datetime está em UTC e converte para o fuso de Brasília
-        data_utc = ultimo_registro["data_hora"].replace(tzinfo=pytz.utc)
-        data_brasilia = data_utc.astimezone(fuso_horario_brasilia)
-        return data_brasilia.strftime('%d/%m/%Y %H:%M:%S')
-    return "Nunca atualizado"
-
-
-# Conectar à collection de histórico de atualizações
-collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']
-
 # Definir as colunas da primeira linha do layout
 col1, col2, col3 = st.columns([1, 3, 1])
 
@@ -70,26 +49,15 @@ st.markdown("<hr style='border:3px solid red'>", unsafe_allow_html=True)
 
 # Filtros e seleção de período
 with st.sidebar:
-    # Variável para armazenar os dados
-    dados = buscar_dados(collection)  # Inicializa dados antes do botão
-
-    # Botão para atualizar dados
-    if st.button('Atualizar Dados'):
-        progresso = st.progress(0)
-        atualizar_dados(collection, progresso, collection_historico)
-        st.success("Atualização concluída com sucesso!")
-
-        # Após a atualização, busca os dados novamente
-        dados = buscar_dados(collection)  # Atualiza a variável dados após a inserção
     
-    # Exibir a última atualização
-    ultima_atualizacao = obter_ultima_atualizacao(collection_historico)
-    st.write(f"Última atualização: {ultima_atualizacao}")
+    st.image(logo_century, width=150)
+
+    atualizar_dados(collection)
+
+    dados = buscar_dados(collection)  # Inicializa dados antes do botão
 
     # Uso da variável dados
     if dados:  # Verifica se há dados
-        # Filtro de Organização
-        st.markdown("<h3 style='text-align: left;'>Organização</h3>", unsafe_allow_html=True)
 
         # Obter todas as organizações distintas (org_unit_name) para o filtro
         orgs_distintas = sorted(set([dado["organizacao"] for dado in dados]))
@@ -151,15 +119,65 @@ with st.sidebar:
     st.markdown("<h3 style='text-align: left;'>Atendimentos</h3>", unsafe_allow_html=True)
     st.markdown(f"<h1 style='text-align: center;'>{atendimentos_totais}</h1>", unsafe_allow_html=True)
 
+    if st.button("Gerar PDF", key="generate"):
+        with st.spinner("Gerando o PDF..."):
+            pdf_content = gerar_pdf(data_inicio, data_fim, dados_filtrados, org_selecionada)
+                     
+            st.download_button(
+                label="Download do relatório PDF",
+                data=pdf_content,
+                file_name="relatorio_atendimento.pdf",
+                mime="application/pdf",
+                key="download",
+            )
+
 # Colocar os gráficos lado a lado
 col1, col2 = st.columns(2)
 
 with col1:
-    grafico_tipo_solicitacao(dados_filtrados)
+    st.markdown("<h4 style='text-align: center;'>Tipo de Solicitação</h4>", unsafe_allow_html=True)
+    img_buffer = grafico_tipo_solicitacao(dados_filtrados)
+    
+    if img_buffer:
+        st.image(img_buffer, use_column_width=True)
+    else:
+        st.write("Sem dados para exibir.")
 
 with col2:
-    contagemStatus(dados_filtrados)
+    st.markdown("<h4 style='text-align: center;'>Contagem de Status</h4>", unsafe_allow_html=True)
+    img_buffer = contagemStatus(dados_filtrados)
+    
+    if img_buffer:
+        st.image(img_buffer, use_column_width=True)
+    else:
+        st.write("Sem dados para exibir.")
 
-atendimentosDia(dados_filtrados)
-solicitacoesExclusao(dados_filtrados)
-tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados)
+# Gráfico de Atendimentos por Dia
+st.markdown("<h4 style='text-align: center;'>Atendimentos por Dia (Últimos 30 dias)</h4>", unsafe_allow_html=True)
+
+img_buffer = atendimentosDia(dados_filtrados)
+
+if img_buffer:
+    st.image(img_buffer)
+else:
+    st.write("Sem dados para exibir.")
+
+# Solicitações de Atendimentos por Dia
+st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", unsafe_allow_html=True)
+
+df_tabela = solicitacoesExclusao(dados_filtrados)
+
+if not df_tabela.empty:
+    st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
+else:
+    st.write("Nenhuma solicitação de exclusão encontrada.")
+
+# Gráfico de Linha de Tendência de Atendimentos por Dia
+st.markdown("<h4 style='text-align: center;'>Linha de Tendência de Atendimentos por Dia</h4>", unsafe_allow_html=True)
+
+img_buffer = tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados)
+
+if img_buffer:
+    st.image(img_buffer, use_column_width=True)
+else:
+    st.write("Sem dados para exibir.")

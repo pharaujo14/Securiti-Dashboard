@@ -4,6 +4,7 @@ import seaborn as sns
 import streamlit as st
 import altair as alt
 
+from io import BytesIO
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
 from datetime import datetime, timedelta
@@ -20,44 +21,44 @@ traducoes = {
 }
 
 def grafico_tipo_solicitacao(dados_filtrados):
-    """Gera e exibe o gráfico de Tipo de Solicitação no Streamlit."""
     
     # Contagem dos tipos de solicitação com base no type_tags
     tipos_solicitacao = [traducoes[dado["type_tags"]] for dado in dados_filtrados if dado["type_tags"] in traducoes]
     df_tipos_solicitacao = pd.DataFrame(tipos_solicitacao, columns=["Tipo de Solicitação"])
     contagem_tipos = df_tipos_solicitacao["Tipo de Solicitação"].value_counts()
 
-    st.markdown("<h4 style='text-align: center;'>Tipo de Solicitação</h4>", unsafe_allow_html=True)
-
     if not contagem_tipos.empty:
-        # Criar um DataFrame para o Seaborn
+        # Cria o DataFrame para o Seaborn
         df_contagem_tipos = contagem_tipos.reset_index()
         df_contagem_tipos.columns = ['Tipo de Solicitação', 'Quantidade']
 
-        # Criar o gráfico de barras com Seaborn
+        # Cria o gráfico de barras
         plt.figure(figsize=(10, 6))
         sns.barplot(x='Quantidade', y='Tipo de Solicitação', data=df_contagem_tipos, color='#0000CD')
 
-        # Adicionar os valores fora das barras
+        # Adiciona os valores fora das barras
         for i, v in enumerate(df_contagem_tipos['Quantidade']):
             plt.text(v + 1, i, f'{v}', color='black', va='center', fontweight='bold')
 
-        # Ajustar limites do gráfico
+        # Ajustes de limites e remoção de rótulos
         plt.xlim(0, df_contagem_tipos['Quantidade'].max() + 5)
-
-        # Remover rótulos dos eixos
         plt.xlabel('')
         plt.ylabel('')
 
         sns.despine()
         plt.grid(False)
-        st.pyplot(plt)
+
+        # Salva o gráfico como uma imagem em um buffer BytesIO
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png', bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close()  # Fecha o gráfico para liberar memória
+
+        return img_buffer  # Retorna o buffer da imagem
     else:
-        st.write("Sem dados para exibir.")
+        return None  # Retorna None se não houver dados
 
 def contagemStatus(dados_filtrados):
-    # Gráfico de Status
-    st.markdown("<h4 style='text-align: center;'>Contagem de Status</h4>", unsafe_allow_html=True)
 
     status_solicitacao = [dado["status"] for dado in dados_filtrados]
     df_status_solicitacao = pd.DataFrame(status_solicitacao, columns=["Status"])
@@ -78,79 +79,71 @@ def contagemStatus(dados_filtrados):
         plt.ylabel('')
         sns.despine()
         plt.grid(False)
-        st.pyplot(plt)
+
+        # Salvar o gráfico em um buffer de imagem
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png', bbox_inches='tight')
+        plt.close()  # Fecha o plot para liberar memória
+        img_buffer.seek(0)  # Define o início do buffer
+        return img_buffer
     else:
-        st.write("Sem dados para exibir.")
+        return None
 
 def atendimentosDia(dados_filtrados):
-    # Gráfico de Atendimentos por Dia
-    st.markdown("<h4 style='text-align: center;'>Atendimentos por Dia (Últimos 30 dias)</h4>", unsafe_allow_html=True)
 
-    # Extrair datas de atendimento (timestamp ou string) e verificar o tipo de dado
+    # Extrair datas de atendimento
     datas_atendimento = [dado["created_at"] for dado in dados_filtrados]
     df_atendimentos = pd.DataFrame(datas_atendimento, columns=["Data de Atendimento"])
 
-    # Tentar converter primeiro como timestamp em milissegundos
+    # Tentar converter os dados
     try:
-        # Caso os dados sejam timestamps
         df_atendimentos['Data de Atendimento'] = pd.to_datetime(df_atendimentos['Data de Atendimento'], unit='ms')
     except ValueError:
-        # Caso os dados sejam strings no formato DD/MM/AAAA HH:MM:SS
         df_atendimentos['Data de Atendimento'] = pd.to_datetime(df_atendimentos['Data de Atendimento'], format='%d/%m/%Y %H:%M:%S')
 
     # Contar atendimentos por dia
     contagem_atendimentos_por_dia = df_atendimentos['Data de Atendimento'].dt.date.value_counts().sort_index()
 
-    # Se houver dados de atendimento
     if not contagem_atendimentos_por_dia.empty:
-        # Transformar a contagem em DataFrame
         df_contagem_dia = contagem_atendimentos_por_dia.reset_index()
         df_contagem_dia.columns = ['Data', 'Quantidade']
 
-        # Criar uma sequência de datas que cobre o intervalo completo
+        # Criar uma sequência de datas
         full_range = pd.date_range(start=df_atendimentos['Data de Atendimento'].min().date(),
-                                end=df_atendimentos['Data de Atendimento'].max().date(), 
-                                freq='D')
+                                   end=df_atendimentos['Data de Atendimento'].max().date(), freq='D')
 
-        # Reindexar o DataFrame para preencher os dias faltantes com zero
+        # Reindexar para preencher dias ausentes com zero
         df_contagem_dia = df_contagem_dia.set_index('Data').reindex(full_range, fill_value=0).reset_index()
         df_contagem_dia.columns = ['Data', 'Quantidade']
 
-        # Selecionar apenas os últimos 30 dias do intervalo
+        # Selecionar os últimos 30 dias
         df_contagem_dia = df_contagem_dia.tail(30)
-
-        # Converter a coluna 'Data' para o formato DD-MM para o eixo X
         df_contagem_dia['Data'] = df_contagem_dia['Data'].dt.strftime('%d-%m')
 
-        # Criar o gráfico de barras
-        fig, ax = plt.subplots(figsize=(12, 6))  # Criar figura e eixos
+        # Criar o gráfico em uma figura grande
+        fig, ax = plt.subplots(figsize=(18, 9))  # Aumentar tamanho da figura
         sns.barplot(x='Data', y='Quantidade', data=df_contagem_dia, color='#0000CD', ax=ax)
 
-        # Adicionar os valores fora das barras
         for i, v in enumerate(df_contagem_dia['Quantidade']):
             ax.text(i, v + 0.5, f'{v}', color='black', ha='center', fontweight='bold')
 
-        # Rotacionar rótulos do eixo X para melhor visualização
         plt.xticks(rotation=45)
-
-        # Remover rótulos e título
-        ax.set_ylabel('')  # Remover o rótulo do eixo Y
-        ax.set_xlabel('')  # Remover o rótulo do eixo X
+        ax.set_ylabel('')
+        ax.set_xlabel('')
         sns.despine()
         plt.grid(False)
-
-        # Configurar os ticks do eixo Y para serem inteiros
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-        # Exibir o gráfico no Streamlit
-        st.pyplot(fig)
-
+        # Salvar o gráfico em alta resolução no buffer
+        img_buffer = BytesIO()
+        fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=200)  # Aumentar DPI para melhor qualidade
+        plt.close(fig)
+        img_buffer.seek(0)
+        return img_buffer
     else:
-        st.write("Sem dados para exibir.")
+        return None
 
 def solicitacoesExclusao(dados_filtrados):
-    # Criar uma seção para o título e a tabela de exclusão
-    st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", unsafe_allow_html=True)
 
     # Filtrar apenas os tickets de exclusão ('type_tags': 'erasure')
     tickets_exclusao = [ticket for ticket in dados_filtrados if 'erasure' in ticket["type_tags"]]
@@ -199,16 +192,15 @@ def solicitacoesExclusao(dados_filtrados):
         df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d de %b. de %Y')
         
         # Exibir o DataFrame com a primeira coluna como índice
-        st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
+        # st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
+        return df_tabela
     else:
-        st.write("Nenhuma solicitação de exclusão encontrada.")
+        return pd.DataFrame()  
+        # st.write("Nenhuma solicitação de exclusão encontrada.")
 
 def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
-    # Gráfico de Linha de Tendência de Atendimentos por Dia
-    st.markdown("<h4 style='text-align: center;'>Linha de Tendência de Atendimentos por Dia</h4>", unsafe_allow_html=True)
-
     # Definir a variável today (data atual)
-    today = pd.to_datetime(datetime.now()).tz_localize('America/Sao_Paulo').date()  # Data atual como tz-aware
+    today = pd.to_datetime(datetime.now()).tz_localize('America/Sao_Paulo').date()
 
     # Extrair as datas de atendimento dos dados filtrados
     datas_atendimento = [dado["created_at"] for dado in dados_filtrados]
@@ -236,8 +228,8 @@ def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
         df_contagem_dia.set_index('Data', inplace=True)
 
         # Adicionar o dia atual ao intervalo, se ainda não existir
-        if today not in df_contagem_dia.index.date:  # Compare apenas a parte da data
-            df_contagem_dia.loc[pd.Timestamp(today).tz_localize('America/Sao_Paulo')] = 0  # Inicializa o valor como 0 se a data não existir
+        if today not in df_contagem_dia.index.date:
+            df_contagem_dia.loc[pd.Timestamp(today).tz_localize('America/Sao_Paulo')] = 0
 
         # Criar uma sequência de datas que cobre o intervalo completo
         full_range = pd.date_range(start=df_contagem_dia.index.min(), end=df_contagem_dia.index.max())
@@ -249,18 +241,31 @@ def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
         # Filtrar o DataFrame com o período selecionado
         df_contagem_dia_limited = df_contagem_dia.loc[data_inicio_ts:data_fim_ts].reset_index()
 
-        # Criar o gráfico com Altair com padding extra no eixo X
-        chart = alt.Chart(df_contagem_dia_limited).mark_line(point=True).encode(
-            x=alt.X('Data:T', title='', axis=alt.Axis(format='%d-%m', ticks=True, grid=False), scale=alt.Scale(padding=20)),  # Adicionar padding no eixo X
-            y=alt.Y('Quantidade:Q', title='', axis=alt.Axis(format='d'),scale=alt.Scale(padding=20)),  # Título do eixo Y removido e formato definido para inteiros
-            tooltip=['Data:T', 'Quantidade:Q']
-        ).properties(
-            height=400   # Altura ajustada
-        ).interactive()
+        # Plotar o gráfico com matplotlib
+        plt.figure(figsize=(12, 6))  # Tamanho ajustado para ocupar a largura total
+        plt.plot(df_contagem_dia_limited['Data'], df_contagem_dia_limited['Quantidade'], marker='.', linestyle='-', color='b')
 
-        # Exibir o gráfico no Streamlit com largura total
-        st.altair_chart(chart, use_container_width=True)
+        # Ajuste do formato de data para DD-MM
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%d-%m'))
+
+        # Remover grades internas
+        plt.grid(visible=False)
+
+        # Remover título e labels dos eixos
+        plt.xlabel('')
+        plt.ylabel('')
+
+        # Ajuste da rotação dos rótulos do eixo x
+        plt.xticks(rotation=45)
+
+        # Salvar o gráfico no buffer
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')  # Ajuste para ocupar o espaço completo
+        buf.seek(0)  # Voltar ao início do buffer para leitura
+
+        # Retornar o buffer para ser utilizado em outras funções, como geração de PDF
+        return buf
 
     else:
         st.write("Sem dados para exibir.")
-
+        return None
