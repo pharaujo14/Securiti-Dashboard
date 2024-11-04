@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from conectaBanco import conectaBanco
+from cadastra_user import trocar_senha
 from login import login, is_authenticated
 from api import atualizar_dados, buscar_dados
 from graficos import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
@@ -123,7 +124,7 @@ with st.sidebar:
     if st.button("Gerar PDF", key="generate"):
         with st.spinner("Gerando o PDF..."):
             pdf_content = gerar_pdf(data_inicio, data_fim, dados_filtrados, org_selecionada)
-                     
+                        
             st.download_button(
                 label="Download do relatório PDF",
                 data=pdf_content,
@@ -131,6 +132,16 @@ with st.sidebar:
                 mime="application/pdf",
                 key="download",
             )
+
+    # Definindo uma flag de sessão para mostrar o formulário de troca de senha
+    if 'mostrar_form_troca_senha' not in st.session_state:
+        st.session_state.mostrar_form_troca_senha = False
+
+    if st.button("Trocar Senha"):
+        st.session_state.mostrar_form_troca_senha = not st.session_state.mostrar_form_troca_senha
+
+    if st.session_state.mostrar_form_troca_senha:
+        trocar_senha()
 
 # Colocar os gráficos lado a lado
 col1, col2 = st.columns(2)

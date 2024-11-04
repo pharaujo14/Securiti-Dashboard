@@ -1,20 +1,22 @@
 import streamlit as st
+import bcrypt
 
-# Função de autenticação
+from pymongo import MongoClient
+
+from conectaBanco import conectaBanco
+
+
+# Função para autenticação
 def login():
-
     # Configurações da página com o logo
     st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png")
 
     # Adiciona o logo ao topo da página
     st.image("logo_century.png", use_column_width=True)
 
-    # Obtém as credenciais do arquivo secrets.toml
-    credentials = st.secrets["credentials"]
-
     # Campos de entrada para o usuário e senha
     st.title("Login")
-    
+
     # Aqui permite que o Enter envie o formulário de login
     login_form = st.form(key="login_form")
     username = login_form.text_input("Usuário")
@@ -24,14 +26,27 @@ def login():
     login_button = login_form.form_submit_button("Entrar")
 
     if login_button:
-        if username in credentials and password == credentials[username]:
-            st.session_state['logged_in'] = True
-            st.session_state['username'] = username  # Salva o nome do usuário na sessão
-            st.success(f"Bem-vindo, {username}!")
-            st.experimental_rerun()  # Força a página a recarregar após o login
+        # Carregar credenciais do banco de dados
+        db_user = st.secrets["database"]["user"]
+        db_password = st.secrets["database"]["password"]
+
+        # Conexão com o banco de dados
+        db = conectaBanco(db_user, db_password)
+        users_collection = db["users"]  # Nome da sua collection de usuários
+        user_data = users_collection.find_one({"username": username})
+
+        if user_data:
+            # Verifica a senha com bcrypt
+            if bcrypt.checkpw(password.encode("utf-8"), user_data["password"]):
+                st.session_state['logged_in'] = True
+                st.session_state['username'] = username
+                st.success(f"Bem-vindo, {username}!")
+                st.experimental_rerun()  # Recarrega a página após o login
+            else:
+                st.error("Usuário ou senha incorretos.")
         else:
             st.error("Usuário ou senha incorretos.")
 
-# Verifica o estado de login
+# Função para verificar se o usuário está autenticado
 def is_authenticated():
     return st.session_state.get('logged_in', False)
