@@ -11,6 +11,7 @@ class PDF(FPDF):
         super().__init__()
         self.logo_carrefour = logo_carrefour
         self.logo_century = logo_century
+        self.gerado_em = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # Armazena a data/hora de geração
 
     def header(self):
         # Exibir os logos e o título na primeira linha
@@ -18,24 +19,41 @@ class PDF(FPDF):
         self.set_font("Arial", "B", 16)
         self.cell(0, 10, "Atendimento da Central de Privacidade", 0, 1, "C")  # Título centralizado
         self.image(self.logo_century, 170, 8, 33)  # Logo à direita
-        self.ln(20)
+        self.ln(15)
         
         # Linha separadora vermelha
         self.set_draw_color(255, 0, 0)  # Vermelho
         self.set_line_width(1)
         self.line(10, 28, 200, 28)
 
+    def footer(self):
+        # Definir posição no rodapé
+        self.set_y(-15)
+        self.set_font("Arial", "I", 7)
+        self.cell(0, 10, f"Gerado em {self.gerado_em}", 0, 0, "R")  # Texto centralizado no rodapé
+
     def add_report_info(self, data_inicio, data_fim, org_selecionada):
-        # Informações sobre o relatório
-        self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "Informações sobre o relatório:", 0, 1, "C")  # Título centralizado
-        self.ln(5)
-        self.set_font("Arial", "", 12)
-        self._add_bold_label("Gerado em:", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-        self._add_bold_label("Data de início:", str(data_inicio))
-        self._add_bold_label("Data de fim:", str(data_fim))
-        self._add_bold_label("Organização Selecionada:", str(org_selecionada))
-        self.ln(5)
+        # Definindo as larguras das colunas
+        col_width = 60  # Largura de cada coluna (ajuste conforme necessário)
+        row_height = 6  # Altura das linhas
+
+        # Definir a fonte para os cabeçalhos
+        self.set_font("Arial", "B", 10)
+
+        # Linha de cabeçalhos
+        self.cell(col_width, row_height, "Data de início", 1, 0, 'L')
+        self.cell(col_width, row_height, "Data de fim", 1, 0, 'L')
+        self.cell(col_width, row_height, "Organização Selecionada", 1, 1, 'L')
+
+        # Definir a fonte para os valores
+        self.set_font("Arial", "", 10)
+
+        # Linha de valores
+        self.cell(col_width, row_height, str(data_inicio), 1, 0, 'L')
+        self.cell(col_width, row_height, str(data_fim), 1, 0, 'L')
+        self.cell(col_width, row_height, str(org_selecionada), 1, 1, 'L')
+
+        self.ln(5)  # Espaço após a tabela
 
     def add_grafico_tipo_solicitacao(self, dados_filtrados):
         self.set_font("Arial", "B", 14)
@@ -197,16 +215,16 @@ def gerar_pdf(data_inicio, data_fim, dados_filtrados, org_selecionada, logo_carr
     pdf.add_grafico_atendimentosDia(dados_filtrados)
     pdf.ln(10)  # Adiciona um espaço de 10 mm após o gráfico
 
+    # Adicionar o último gráfico com verificação de espaço
+    verificar_espaco_pdf(pdf, altura_necessaria=80)
+    pdf.add_grafico_tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados)
+
+    verificar_espaco_pdf(pdf, altura_necessaria=40)
     df_tabela = solicitacoesExclusao(dados_filtrados)
     if not df_tabela.empty:
         pdf.add_tabela_exclusao(df_tabela) 
     else:
         pdf.cell(0, 10, "Nenhuma solicitação de exclusão encontrada.", 0, 1, "C")
-
-
-    # Adicionar o último gráfico com verificação de espaço
-    verificar_espaco_pdf(pdf, altura_necessaria=80)
-    pdf.add_grafico_tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados)
 
     # Gerar o PDF final
     pdf_output = pdf.output(dest="S").encode("latin1")

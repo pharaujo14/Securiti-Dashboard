@@ -11,3 +11,4 @@ altair
 requests
 pymongo
 pytz
+fpdf==1.7.2

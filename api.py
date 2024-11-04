@@ -8,7 +8,7 @@ from datetime import datetime
 # Função para ajustar o status
 def ajustar_status(status_code):
     status_dict = {
-        1: "Aberto",
+        1: "Em andamento",
         2: "Em andamento",
         3: "Concluído",
         4: "Negado"

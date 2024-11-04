@@ -4,6 +4,7 @@ import pytz
 
 from PIL import Image
 from datetime import datetime
+from datetime import timedelta
 
 from conectaBanco import conectaBanco
 from login import login, is_authenticated
@@ -162,16 +163,6 @@ if img_buffer:
 else:
     st.write("Sem dados para exibir.")
 
-# Solicitações de Atendimentos por Dia
-st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", unsafe_allow_html=True)
-
-df_tabela = solicitacoesExclusao(dados_filtrados)
-
-if not df_tabela.empty:
-    st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
-else:
-    st.write("Nenhuma solicitação de exclusão encontrada.")
-
 # Gráfico de Linha de Tendência de Atendimentos por Dia
 st.markdown("<h4 style='text-align: center;'>Linha de Tendência de Atendimentos por Dia</h4>", unsafe_allow_html=True)
 
@@ -181,3 +172,13 @@ if img_buffer:
     st.image(img_buffer, use_column_width=True)
 else:
     st.write("Sem dados para exibir.")
+
+# Solicitações de Atendimentos por Dia
+st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", unsafe_allow_html=True)
+
+df_tabela = solicitacoesExclusao(dados_filtrados)
+
+if not df_tabela.empty:
+    st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
+else:
+    st.write("Nenhuma solicitação de exclusão encontrada.")
