@@ -20,7 +20,6 @@ def adicionar_usuario(username, senha):
 
 # Função para troca de senha
 def trocar_senha():
-
     # Carregar credenciais do banco de dados
     db_user = st.secrets["database"]["user"]
     db_password = st.secrets["database"]["password"]
@@ -38,20 +37,42 @@ def trocar_senha():
         senha_atual = st.text_input("Senha Atual", type="password")
         nova_senha = st.text_input("Nova Senha", type="password")
         confirmar_nova_senha = st.text_input("Confirmar Nova Senha", type="password")
-        submit_button = st.form_submit_button("Alterar Senha")
+        senha_valida = validar_senha(nova_senha) and nova_senha == confirmar_nova_senha
 
-        if submit_button:
+        trocar_button = st.form_submit_button("Alterar Senha")
+
+        if trocar_button:
             user_data = users_collection.find_one({"username": username})
-            if user_data and bcrypt.checkpw(senha_atual.encode("utf-8"), user_data["password"]):
-                if nova_senha == confirmar_nova_senha:
-                    nova_senha_hash = bcrypt.hashpw(nova_senha.encode("utf-8"), bcrypt.gensalt())
-                    users_collection.update_one({"username": username}, {"$set": {"password": nova_senha_hash}})
-                    st.success("Senha alterada com sucesso!")
-                    st.session_state.mostrar_form_troca_senha = False  # Oculta o formulário após sucesso
+            if user_data:
+                if bcrypt.checkpw(senha_atual.encode("utf-8"), user_data["password"]):
+                    if senha_valida:
+                        nova_senha_hash = bcrypt.hashpw(nova_senha.encode("utf-8"), bcrypt.gensalt())
+                        users_collection.update_one({"username": username}, {"$set": {"password": nova_senha_hash}})
+                        st.success("Senha alterada com sucesso!")
+                        st.session_state.mostrar_form_troca_senha = False  # Oculta o formulário após sucesso
+                    else:
+                        if nova_senha != confirmar_nova_senha:
+                            st.warning('As senhas não coincidem.')
+                        elif not validar_senha(nova_senha):
+                            st.warning('A senha deve conter no mínimo 8 caracteres e conter letra maiúscula, minúscula, número e caractere especial.')
                 else:
-                    st.error("A nova senha e a confirmação não correspondem.")
+                    st.error("A senha atual está incorreta.")
             else:
-                st.error("A senha atual está incorreta.")
-
+                st.error("Usuário não encontrado.")
+                
+def validar_senha(senha):
+    return (
+        len(senha) >= 8 and
+        any(c.isupper() for c in senha) and
+        any(c.islower() for c in senha) and
+        any(c.isdigit() for c in senha) and
+        any(not c.isalnum() for c in senha)
+    )
 
 # adicionar_usuario("anderson.franca@centurydata.com.br", "Teste@12345")
+
+# adicionar_usuario("malu_gallotti@carrefour.com", "e2@TcANvq8u")
+# adicionar_usuario("fernanda_lobato@carrefour.com", "nLRwO#V8Q1s")
+# adicionar_usuario("yasmin_silva_17@carrefour.com", "oBhLsqMU$4p")
+# adicionar_usuario("mariana_girondi@carrefour.com", "jkVAU&EZxOC")
+# adicionar_usuario("danilo_kinoshita@carrefour.com", "yyufTnAyQ#8")

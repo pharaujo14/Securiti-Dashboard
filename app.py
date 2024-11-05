@@ -33,6 +33,21 @@ logo_century = Image.open("logo_century.png")
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
 
+# Buscar a última atualização
+def obter_ultima_atualizacao(collection_historico):
+    
+    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
+    ultimo_registro = collection_historico.find_one(sort=[("data_hora", -1)])
+    if ultimo_registro and isinstance(ultimo_registro["data_hora"], datetime):
+        # Garante que o datetime está em UTC e converte para o fuso de Brasília
+        data_utc = ultimo_registro["data_hora"].replace(tzinfo=pytz.utc)
+        data_brasilia = data_utc.astimezone(fuso_horario_brasilia)
+        return data_brasilia.strftime('%d/%m/%Y %H:%M:%S')
+    return "Nunca atualizado"
+    
+# Conectar à collection de histórico de atualizações
+collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']
+
 # Definir as colunas da primeira linha do layout
 col1, col2, col3 = st.columns([1, 3, 1])
 
@@ -54,9 +69,13 @@ with st.sidebar:
     
     st.image(logo_century, width=150)
 
-    atualizar_dados(collection)
+    atualizar_dados(collection, collection_historico)
 
     dados = buscar_dados(collection)  # Inicializa dados antes do botão
+
+    # Exibir a última atualização
+    ultima_atualizacao = obter_ultima_atualizacao(collection_historico)
+    st.write(f"Última atualização: {ultima_atualizacao}")
 
     # Uso da variável dados
     if dados:  # Verifica se há dados

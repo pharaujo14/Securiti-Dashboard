@@ -4,14 +4,21 @@ from graficos import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, 
 
 import tempfile
 import os
+import pytz
 
 # Classe personalizada para geração do PDF
 class PDF(FPDF):
     def __init__(self, logo_carrefour, logo_century):
+
+        fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
+        data_atualizacao_brasilia = datetime.now(fuso_horario_brasilia)
+        data_atualizacao_utc = data_atualizacao_brasilia.astimezone(pytz.utc)  # Converte para UTC
+        hora_formatada = data_atualizacao_brasilia.strftime('%d/%m/%Y %H:%M')
+
         super().__init__()
         self.logo_carrefour = logo_carrefour
         self.logo_century = logo_century
-        self.gerado_em = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # Armazena a data/hora de geração
+        self.gerado_em = hora_formatada
 
     def header(self):
         # Exibir os logos e o título na primeira linha
