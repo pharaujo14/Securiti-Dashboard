@@ -209,6 +209,6 @@ st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", 
 df_tabela = solicitacoesExclusao(dados_filtrados)
 
 if not df_tabela.empty:
-    st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
+    st.dataframe(df_tabela.set_index('ID'), use_container_width=True)
 else:
     st.write("Nenhuma solicitação de exclusão encontrada.")

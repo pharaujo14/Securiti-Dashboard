@@ -174,6 +174,8 @@ def solicitacoesExclusao(dados_filtrados):
         
         # Adicionar dados à tabela
         tabela_dados.append({
+            'ID': str(ticket['id']),
+            'Detalhes da Requisição': ticket['detalhes_req'],
             'Data Envio': created_at,
             'Etapa agrupada': status,
             'Duração em Horas': round(duracao_horas, 1) if isinstance(duracao_horas, (float, int)) else '-',
@@ -185,18 +187,19 @@ def solicitacoesExclusao(dados_filtrados):
 
     # Verificar se o DataFrame não está vazio antes de exibir
     if not df_tabela.empty:
+
         # Ordenar pela coluna 'Data Envio' do mais recente para o menos recente
         df_tabela = df_tabela.sort_values(by='Data Envio', ascending=False)
+
+        # Reordenar as colunas para que 'ID' seja a primeira
+        df_tabela = df_tabela[['ID', 'Detalhes da Requisição', 'Data Envio', 'Etapa agrupada', 'Duração em Horas', 'Data término']]
         
         # Formatando 'Data Envio' para string novamente para exibição
         df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d de %b. de %Y')
         
-        # Exibir o DataFrame com a primeira coluna como índice
-        # st.dataframe(df_tabela.set_index('Data Envio'), use_container_width=True)
         return df_tabela
     else:
-        return pd.DataFrame()  
-        # st.write("Nenhuma solicitação de exclusão encontrada.")
+        return pd.DataFrame()
 
 def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
     # Definir a variável today (data atual)

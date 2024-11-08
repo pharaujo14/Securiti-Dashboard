@@ -97,7 +97,8 @@ def get_ticket_data(ticket_id):
             "published_at": converter_data(ticket_data.get("published_at") / 1000) if ticket_data.get("published_at") else "N/A",
             "created_at": converter_data(ticket_data.get("created_at") / 1000) if ticket_data.get("created_at") else "N/A",
             "id": ticket_data.get("id"),
-            "organizacao": ticket_data.get("custom_fields", {}).get("organizacao")
+            "organizacao": ticket_data.get("custom_fields", {}).get("organizacao"),
+            "detalhes_req": ticket_data.get("custom_fields", {}).get("requestDetails")
         }
         
         return extracted_data
@@ -137,7 +138,8 @@ def atualizar_dados(collection, collection_historico):
             "published_at": dado.get("published_at"),
             "created_at": dado.get("created_at"),
             "id": dado.get("id"),
-            "organizacao": dado.get("organizacao")
+            "organizacao": dado.get("organizacao"),
+            "detalhes_req": dado.get("detalhes_req")
         }
 
         if not collection.find_one({"id": dado_filtrado["id"]}):  

@@ -135,34 +135,34 @@ class PDF(FPDF):
         self.cell(0, 10, "Solicitações de Exclusão", 0, 1, "C")
         self.ln(5)
 
-        self.set_font("Arial", "B", 10)
+        self.set_font("Arial", "B", 7)
 
         # Cabeçalho da tabela
         headers = df_tabela.columns.tolist()
-        # Definindo a largura das colunas
-        colunas_largura = [40, 50, 40, 50]  # Ajuste as larguras conforme necessário
+        colunas_largura = [10, 65, 30, 30, 30, 30]  # Ajuste as larguras conforme necessário
 
-        # Adicionar cabeçalho
+        # Adicionar cabeçalho com bordas
         for header, largura in zip(headers, colunas_largura):
             self.cell(largura, 7, header, 1, 0, 'C')
         self.ln()
 
         # Adicionar dados da tabela
-        self.set_font("Arial", "", 10)  # Define a fonte normal para os dados
+        self.set_font("Arial", "", 7)
         for _, row in df_tabela.iterrows():
-            # Verifica se há espaço suficiente na página para a linha
-            if self.get_y() + 7 > self.page_break_trigger:  # 7 é a altura da linha
-                self.add_page()  # Adiciona uma nova página
-                self.set_font("Arial", "B", 10)  # Define a fonte como negrito para o cabeçalho
-                # Adicionar cabeçalho novamente
+            # Checa se há espaço suficiente na página para a linha
+            if self.get_y() + 7 > self.page_break_trigger:
+                self.add_page()
+                self.set_font("Arial", "B", 7)
                 for header, largura in zip(headers, colunas_largura):
                     self.cell(largura, 7, header, 1, 0, 'C')
                 self.ln()
-                self.set_font("Arial", "", 10)  # Define a fonte normal para os dados
+                self.set_font("Arial", "", 7)
 
+            # Limita cada célula a 50 caracteres e adiciona bordas
             for header, largura in zip(headers, colunas_largura):
-                self.cell(largura, 6, str(row[header]), 1, 0, 'C')
-            self.ln()
+                cell_text = str(row[header])[:40]  # Limita a 50 caracteres
+                self.cell(largura, 6, cell_text, 1, 0, 'C')  # 1 adiciona a borda
+            self.ln()  # Move para a próxima linha
 
         self.ln(5)  # Espaço após a tabela
 
