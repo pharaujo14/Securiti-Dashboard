@@ -10,6 +10,7 @@ from conectaBanco import conectaBanco
 from cadastra_user import trocar_senha
 from login import login, is_authenticated
 from api import atualizar_dados, buscar_dados
+from auxiliar import obter_ultima_atualizacao, filtrar_dados, calcular_tempo_medio
 from graficos import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
 from pdf_generator import gerar_pdf
 
@@ -33,18 +34,6 @@ logo_century = Image.open("logo_century.png")
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
 
-# Buscar a última atualização
-def obter_ultima_atualizacao(collection_historico):
-    
-    fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
-    ultimo_registro = collection_historico.find_one(sort=[("data_hora", -1)])
-    if ultimo_registro and isinstance(ultimo_registro["data_hora"], datetime):
-        # Garante que o datetime está em UTC e converte para o fuso de Brasília
-        data_utc = ultimo_registro["data_hora"].replace(tzinfo=pytz.utc)
-        data_brasilia = data_utc.astimezone(fuso_horario_brasilia)
-        return data_brasilia.strftime('%d/%m/%Y %H:%M:%S')
-    return "Nunca atualizado"
-    
 # Conectar à collection de histórico de atualizações
 collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']
 
@@ -115,30 +104,21 @@ with st.sidebar:
     else:
         st.warning("Nenhum dado encontrado.")
 
-# Função para filtrar dados por organização e período
-def filtrar_dados(dados, org_selecionada, data_inicio, data_fim):
-    # Converter data para datetime com hora 00:00:00
-    data_inicio_ts = int(datetime.combine(data_inicio, datetime.min.time()).timestamp())
-    data_fim_ts = int(datetime.combine(data_fim, datetime.max.time()).timestamp())
-    
-    # Filtrar os dados com base na organização e no período
-    dados_filtrados = [
-        dado for dado in dados
-        if (org_selecionada == 'Todas' or dado["organizacao"] == org_selecionada) and
-           data_inicio_ts <= datetime.strptime(dado["created_at"], '%d/%m/%Y %H:%M:%S').timestamp() <= data_fim_ts
-    ]
-    return dados_filtrados
-
 # Filtrar os dados pela organização e período selecionados
 dados_filtrados = filtrar_dados(dados, org_selecionada, data_inicio, data_fim)
 
 # Exibir a contagem total de atendimentos filtrados
 atendimentos_totais = len(dados_filtrados)
 
+tempo_medio_atendimento = calcular_tempo_medio(dados_filtrados)
+
 # Caixa com o total de atendimentos
 with st.sidebar:
     st.markdown("<h3 style='text-align: left;'>Atendimentos</h3>", unsafe_allow_html=True)
     st.markdown(f"<h1 style='text-align: center;'>{atendimentos_totais}</h1>", unsafe_allow_html=True)
+
+    st.markdown("<h3 style='text-align: left;'>Tempo Médio de Atendimento (dias)</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center;'>{tempo_medio_atendimento}</h1>", unsafe_allow_html=True)
 
     if st.button("Gerar PDF", key="generate"):
         with st.spinner("Gerando o PDF..."):
