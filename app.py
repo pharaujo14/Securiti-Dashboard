@@ -7,7 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from conectaBanco import conectaBanco
-from cadastra_user import trocar_senha
+from cadastra_user import trocar_senha, adicionar_usuario
 from login import login, is_authenticated
 from api import atualizar_dados, buscar_dados
 from auxiliar import obter_ultima_atualizacao, filtrar_dados, calcular_tempo_medio
@@ -19,6 +19,9 @@ from pdf_generator import gerar_pdf
 if not is_authenticated():
     login()
     st.stop()
+
+# Verifica a role do usuário logado
+user_role = st.session_state.get('role', '')
 
 # Carregar credenciais do banco de dados
 db_user = st.secrets["database"]["user"]
@@ -141,6 +144,16 @@ with st.sidebar:
 
     if st.session_state.mostrar_form_troca_senha:
         trocar_senha()
+
+    if user_role == "admin":
+        if 'mostrar_form_criar_user' not in st.session_state:
+            st.session_state.mostrar_form_criar_user = False
+
+        if st.button("Novo usuário"):
+            st.session_state.mostrar_form_criar_user = not st.session_state.mostrar_form_criar_user
+
+        if st.session_state.mostrar_form_criar_user:
+            adicionar_usuario()
 
 # Colocar os gráficos lado a lado
 col1, col2 = st.columns(2)

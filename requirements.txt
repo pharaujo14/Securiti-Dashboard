@@ -13,3 +13,4 @@ pymongo
 pytz
 fpdf==1.7.2
 bcrypt
+pyperclip

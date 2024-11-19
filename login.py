@@ -40,6 +40,7 @@ def login():
             if bcrypt.checkpw(password.encode("utf-8"), user_data["password"]):
                 st.session_state['logged_in'] = True
                 st.session_state['username'] = username
+                st.session_state['role'] = user_data["role"]  # Armazena a role do usuário
                 st.success(f"Bem-vindo, {username}!")
                 st.experimental_rerun()  # Recarrega a página após o login
             else:
