@@ -74,9 +74,9 @@ def buscar_dados_api():
 def get_ticket_data(ticket_id):
     url = f"https://app.securiti.ai/privaci/v1/admin/dsr/tickets/{ticket_id}"
     headers = {
-        "x-tident":"e90cbf5f-2197-4288-b3ed-a2bee3367563",
-        "x-api-key":"Z8uvzGFFZ44me8mbVoWatKFv244MzP6WXFTF4VQ4",
-        "x-api-secret":"qh6GY6lqatbAydzpb4UNAtq52zSz4jjytg6zW616",
+        "x-tident": st.secrets["api"]["x_tident"],
+        "x-api-key": st.secrets["api"]["x_api_key"],
+        "x-api-secret": st.secrets["api"]["x_api_secret"],
         "accept": "application/json",
         "Content-Type": "application/json"
     }

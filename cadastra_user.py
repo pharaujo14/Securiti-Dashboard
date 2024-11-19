@@ -5,8 +5,18 @@ from pymongo import MongoClient
 
 from conectaBanco import conectaBanco
 
-# Função para adicionar um novo usuário ao MongoDB com senha criptografada (usado para fins de administração)
-def adicionar_usuario(username, senha):
+# Função para adicionar um novo usuário ao MongoDB com senha criptografada e função (usado para fins de administração)
+def adicionar_usuario(username, senha, role):
+    # Validar a senha
+    if not validar_senha(senha):
+        st.error("A senha deve ter pelo menos 8 caracteres, incluir letras maiúsculas, minúsculas, números e caracteres especiais.")
+        return
+    
+    # Verificar se a função é válida
+    if role not in ["admin", "user"]:
+        st.error("A função deve ser 'admin' ou 'user'.")
+        return
+
     # Carregar credenciais do banco de dados
     db_user = st.secrets["database"]["user"]
     db_password = st.secrets["database"]["password"]
@@ -14,9 +24,15 @@ def adicionar_usuario(username, senha):
     # Conexão com o banco de dados
     db = conectaBanco(db_user, db_password)
     users_collection = db["users"]
+    
+    # Criptografar e inserir a senha no banco
     hashed_password = bcrypt.hashpw(senha.encode("utf-8"), bcrypt.gensalt())
-    users_collection.insert_one({"username": username, "password": hashed_password})
-    st.success(f"Usuário {username} adicionado com sucesso.")
+    users_collection.insert_one({
+        "username": username,
+        "password": hashed_password,
+        "role": role
+    })
+    st.success(f"Usuário {username} com função '{role}' adicionado com sucesso.")
 
 # Função para troca de senha
 def trocar_senha():
@@ -69,10 +85,9 @@ def validar_senha(senha):
         any(not c.isalnum() for c in senha)
     )
 
-# adicionar_usuario("anderson.franca@centurydata.com.br", "Teste@12345")
-
-# adicionar_usuario("malu_gallotti@carrefour.com", "e2@TcANvq8u")
-# adicionar_usuario("fernanda_lobato@carrefour.com", "nLRwO#V8Q1s")
-# adicionar_usuario("yasmin_silva_17@carrefour.com", "oBhLsqMU$4p")
-# adicionar_usuario("mariana_girondi@carrefour.com", "jkVAU&EZxOC")
-# adicionar_usuario("danilo_kinoshita@carrefour.com", "yyufTnAyQ#8")
+# adicionar_usuario("rena_melo_santos@carrefour.com", "k8~$0<58Hl)V")
+# adicionar_usuario("thiago_roberto_faria_lima@carrefour.com", "q#z5$Gx4s\^8")
+# adicionar_usuario("carlos_barreto_1@carrefour.com", "o3<9||2Wi0V!")
+# adicionar_usuario("gabriel_benedocci@carrefour.com", "k8+d9B)N5,c%")
+# adicionar_usuario("guilherme_pedroso@carrefour.com", "43_IN3Tmv}\F")
+# adicionar_usuario("rogerio_iwashita@carrefour.com", "CtJ@4M8&2!6_")
