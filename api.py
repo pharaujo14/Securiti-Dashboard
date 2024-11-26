@@ -157,6 +157,13 @@ def atualizar_dados(collection, collection_historico):
     print("Dados atualizados com sucesso no MongoDB.")
 
 def buscar_dados(collection):
+
+    try:
+        # Criar índice único no campo "id" para evitar duplicações
+        collection.create_index("id", unique=True)
+    except:
+        print()
+
     try:
         # Recupera todos os documentos da coleção
         dados = list(collection.find())
