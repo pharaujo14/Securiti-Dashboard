@@ -194,8 +194,8 @@ def solicitacoesExclusao(dados_filtrados):
         # Reordenar as colunas para que 'ID' seja a primeira
         df_tabela = df_tabela[['ID', 'Detalhes da Requisição', 'Data Envio', 'Etapa agrupada', 'Duração em Horas', 'Data término']]
         
-        # Formatando 'Data Envio' para string novamente para exibição
-        df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d de %b. de %Y')
+        # Formatando 'Data Envio' para string novamente para exibição no padrão dd/mm/aaaa hh:mm
+        df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d/%m/%Y %H:%M')
         
         return df_tabela
     else:

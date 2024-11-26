@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import pytz
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Função para ajustar o status
 def ajustar_status(status_code):
@@ -15,10 +15,16 @@ def ajustar_status(status_code):
     }
     return status_dict.get(status_code, "Desconhecido")
 
-# Função para converter timestamps para o formato brasileiro
 def converter_data(timestamp):
     if timestamp and timestamp > 0:
-        return datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')
+        # Definindo o timezone brasileiro (BRT ou America/Sao_Paulo)
+        timezone_brasil = pytz.timezone("America/Sao_Paulo")
+        # Convertendo o timestamp para datetime no fuso horário UTC
+        datetime_utc = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+        # Ajustando para o horário do Brasil
+        datetime_brasil = datetime_utc.astimezone(timezone_brasil)
+        # Formatando no padrão desejado
+        return datetime_brasil.strftime('%d/%m/%Y %H:%M:%S')
     return "N/A"  # Se for 0 ou None, retorna "N/A"
 
 def buscar_dados_api():
