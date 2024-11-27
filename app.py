@@ -5,6 +5,7 @@ import pytz
 from PIL import Image
 from datetime import datetime
 from datetime import timedelta
+from streamlit_autorefresh import st_autorefresh
 
 from conectaBanco import conectaBanco
 from cadastra_user import trocar_senha, adicionar_usuario
@@ -36,6 +37,9 @@ logo_century = Image.open("logo_century.png")
 
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
+
+# Atualizar a cada 5 minutos (300 segundos)
+count = st_autorefresh(interval=300000, key="data_refresh")
 
 # Conectar à collection de histórico de atualizações
 collection_historico = conectaBanco(db_user, db_password)['historico_atualizacoes']

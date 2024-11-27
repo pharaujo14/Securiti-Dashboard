@@ -3,6 +3,7 @@ streamlit-cookies-manager==0.2.0
 streamlit-login-auth-ui==0.2.0
 streamlit-lottie==0.0.5
 streamlit-option-menu==0.3.6
+streamlit-autorefresh==1.0.1
 pandas
 Pillow
 matplotlib
