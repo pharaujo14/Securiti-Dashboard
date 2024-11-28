@@ -132,14 +132,14 @@ class PDF(FPDF):
 
     def add_tabela_exclusao(self, df_tabela):
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "Solicitações de Exclusão", 0, 1, "C")
+        self.cell(0, 10, "Solicitações", 0, 1, "C")
         self.ln(5)
 
         self.set_font("Arial", "B", 7)
 
         # Cabeçalho da tabela
         headers = df_tabela.columns.tolist()
-        colunas_largura = [10, 65, 30, 30, 30, 30]  # Ajuste as larguras conforme necessário
+        colunas_largura = [10, 40, 65, 25, 20, 15, 20]  # Ajuste as larguras conforme necessário
 
         # Adicionar cabeçalho com bordas
         for header, largura in zip(headers, colunas_largura):
@@ -147,16 +147,16 @@ class PDF(FPDF):
         self.ln()
 
         # Adicionar dados da tabela
-        self.set_font("Arial", "", 7)
+        self.set_font("Arial", "", 6)
         for _, row in df_tabela.iterrows():
             # Checa se há espaço suficiente na página para a linha
-            if self.get_y() + 7 > self.page_break_trigger:
+            if self.get_y() + 6 > self.page_break_trigger:
                 self.add_page()
-                self.set_font("Arial", "B", 7)
+                self.set_font("Arial", "B", 6)
                 for header, largura in zip(headers, colunas_largura):
-                    self.cell(largura, 7, header, 1, 0, 'C')
+                    self.cell(largura, 6, header, 1, 0, 'C')
                 self.ln()
-                self.set_font("Arial", "", 7)
+                self.set_font("Arial", "", 6)
 
             # Limita cada célula a 50 caracteres e adiciona bordas
             for header, largura in zip(headers, colunas_largura):

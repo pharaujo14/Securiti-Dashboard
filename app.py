@@ -201,7 +201,7 @@ else:
     st.write("Sem dados para exibir.")
 
 # Solicitações de Atendimentos por Dia
-st.markdown("<h4 style='text-align: center;'>Solicitações de Exclusão</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center;'>Solicitações</h4>", unsafe_allow_html=True)
 
 df_tabela = solicitacoesExclusao(dados_filtrados)
 

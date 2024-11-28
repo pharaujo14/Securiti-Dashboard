@@ -146,7 +146,7 @@ def atendimentosDia(dados_filtrados):
 def solicitacoesExclusao(dados_filtrados):
 
     # Filtrar apenas os tickets de exclusão ('type_tags': 'erasure')
-    tickets_exclusao = [ticket for ticket in dados_filtrados if 'erasure' in ticket["type_tags"]]
+    tickets_exclusao = [ticket for ticket in dados_filtrados]
 
     # Preparar os dados da tabela
     tabela_dados = []
@@ -163,7 +163,7 @@ def solicitacoesExclusao(dados_filtrados):
         if pd.notna(published_at):
             # Se published_at for válido, calcular a duração
             duracao_horas = (published_at - created_at).total_seconds() / 3600  # Convertendo para horas
-            data_termino = published_at.strftime('%d de %b. de %Y')
+            data_termino = published_at
         else:
             # Se published_at for inválido ou N/A
             duracao_horas = '-'
@@ -175,10 +175,11 @@ def solicitacoesExclusao(dados_filtrados):
         # Adicionar dados à tabela
         tabela_dados.append({
             'ID': str(ticket['id']),
-            'Detalhes da Requisição': ticket['detalhes_req'],
+            'Tipo': traducoes.get(ticket["type_tags"], "-"),  # Adicionando o valor traduzido diretamente
+            'Detalhes da Requisição': ticket['detalhes_req'] if ticket['detalhes_req'] else '-',
             'Data Envio': created_at,
-            'Etapa agrupada': status,
-            'Duração em Horas': round(duracao_horas, 1) if isinstance(duracao_horas, (float, int)) else '-',
+            'Etapa agrupada': status if status else '-',
+            'Duração H': round(duracao_horas, 1) if isinstance(duracao_horas, (float, int)) else '-',
             'Data término': data_termino
         })
 
@@ -192,14 +193,22 @@ def solicitacoesExclusao(dados_filtrados):
         df_tabela = df_tabela.sort_values(by='Data Envio', ascending=False)
 
         # Reordenar as colunas para que 'ID' seja a primeira
-        df_tabela = df_tabela[['ID', 'Detalhes da Requisição', 'Data Envio', 'Etapa agrupada', 'Duração em Horas', 'Data término']]
+        df_tabela = df_tabela[['ID', 'Tipo', 'Detalhes da Requisição', 'Data Envio', 'Etapa agrupada', 'Duração H', 'Data término']]
         
-        # Formatando 'Data Envio' para string novamente para exibição no padrão dd/mm/aaaa hh:mm
-        df_tabela['Data Envio'] = df_tabela['Data Envio'].dt.strftime('%d/%m/%Y %H:%M')
-        
+        # Garantir que 'Data Envio' tenha valores datetime válidos antes de usar o .dt.strftime
+        df_tabela['Data Envio'] = pd.to_datetime(df_tabela['Data Envio'], errors='coerce').dt.strftime('%d/%m/%Y %H:%M')
+        df_tabela['Data Envio'] = df_tabela['Data Envio'].fillna('-')
+
+        # Garantir que 'Data término' tenha valores datetime válidos antes de usar o .dt.strftime
+        df_tabela['Data término'] = pd.to_datetime(df_tabela['Data término'], errors='coerce')
+        df_tabela['Data término'] = df_tabela['Data término'].apply(
+            lambda x: x.strftime('%d/%m/%Y %H:%M') if pd.notna(x) else '-'
+        )
+
         return df_tabela
     else:
         return pd.DataFrame()
+
 
 def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
     # Definir a variável today (data atual)
