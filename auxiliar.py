@@ -2,7 +2,7 @@ import pytz
 import pandas as pd
 
 from datetime import datetime
-from datetime import timedelta
+from aux_cookies import fetch_missing_data, processar_para_mongo
 
 # Buscar a última atualização
 def obter_ultima_atualizacao(collection_historico):
@@ -63,3 +63,11 @@ def calcular_tempo_medio(dados):
     tempo_medio = todos_dados['tempo_atendimento'].mean()
     
     return round(tempo_medio, 2) if not pd.isna(tempo_medio) else 0
+
+def atualizacao_periodica():
+    agora = datetime.now()
+
+    # Se for 04:00 da manhã, executa as funções
+    if agora.hour == 4 and agora.minute == 0:
+        fetch_missing_data()
+        processar_para_mongo()

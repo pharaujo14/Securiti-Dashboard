@@ -31,8 +31,8 @@ def buscar_dados_api():
     url = "https://app.securiti.ai/reporting/v1/sources/query?ref=getListOfTickets"
     headers = {
         "x-tident": st.secrets["api"]["x_tident"],
-        "x-api-key": st.secrets["api"]["x_api_key"],
-        "x-api-secret": st.secrets["api"]["x_api_secret"],
+        "x-api-key": st.secrets["api"]["default_api_key"],
+        "x-api-secret": st.secrets["api"]["default_api_secret"],
         "accept": "application/json",
         "Content-Type": "application/json"
     }
