@@ -8,6 +8,7 @@ from pagina_cookies import pagina_cookies
 from pagina_trocarSenha import trocar_senha
 from pagina_usuarios import gerenciar_usuarios
 from pagina_atualizar_cookies import fetch_missing_data, processar_para_mongo
+from pagina_gerador_pia import gerador_pia
 
 from utils.login import login, is_authenticated
 from utils.conectaBanco import conectaBanco
@@ -75,8 +76,8 @@ with st.sidebar:
 
 
     # Determinar opções do menu com base na role
-    menu_options = ["Dashboard DSAR", "Dashboard Cookies", "Trocar Senha"]
-    menu_icons = ["bar-chart", "bar-chart", "key"]
+    menu_options = ["Dashboard DSAR", "Dashboard Cookies", "Gerador de PDF do PIA em preenchimento", "Trocar Senha"]
+    menu_icons = ["bar-chart", "bar-chart", "upload", "key"]
 
     if user_role == "admin":
         menu_options.append("Controle de usuários")
@@ -100,9 +101,13 @@ if selected_tab == "Dashboard DSAR":
     pagina_dsar(dados)
 
 # Aba de Relatórios
+elif selected_tab == "Gerador de PDF do PIA em preenchimento":
+    gerador_pia()
+ 
+ # Aba de Relatórios
 elif selected_tab == "Dashboard Cookies":
     pagina_cookies(collection)
-            
+               
 # Aba de Relatórios
 elif selected_tab == "Trocar Senha":
     trocar_senha(collection)
