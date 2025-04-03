@@ -8,7 +8,6 @@ import ssl
 from datetime import datetime, timedelta
 from google.oauth2.service_account import Credentials
 from google.cloud import storage
-from conectaBanco import conectaBanco
 
 # Ignorar verificação SSL globalmente
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -50,14 +49,6 @@ ORGANIZATIONS = {
         "x-org-id": st.secrets["api"]["cci_org_id"]
     }
 }
-
-# Carregar credenciais do banco de dados
-mongo_user = st.secrets["database"]["user"]
-mongo_password = st.secrets["database"]["password"]
-
-db = conectaBanco(mongo_user, mongo_password)
-consolidado_collection = db["consolidado_cookies"]
-
 
 def list_blobs(bucket_name):
     """Lista os arquivos dentro de um bucket do Google Cloud Storage."""
@@ -177,7 +168,11 @@ def calcular_metricas(df, data_ref):
         resultados.append(metricas)
     return resultados
 
-def processar_para_mongo():
+def processar_para_mongo(db):
+    
+    consolidado_collection = db["consolidado_cookies"]
+
+    
     start_date = datetime(2024, 3, 1)
     end_date = datetime.now() - timedelta(days=1)
     existing_blobs = set(list_blobs(GCS_BUCKET_NAME))

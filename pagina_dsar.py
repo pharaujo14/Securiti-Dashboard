@@ -1,24 +1,14 @@
 import streamlit as st
 from datetime import datetime, timedelta
-from PIL import Image
-from conectaBanco import conectaBanco
-from auxiliar import filtrar_dados, calcular_tempo_medio
-from graficos import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
-from pdf_generator import gerar_pdf
+
+from utils.auxiliar import filtrar_dados, calcular_tempo_medio
+from utils.graficos.graficos_dsar import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
+from utils.pdf.pdf_generator import gerar_pdf
+from utils.logos.import_logos import logo_carrefour, logo_century
 
 # Carregar logos
-logo_carrefour = Image.open("logo.png")
-logo_century = Image.open("logo_century.png")
-
-# Verifica a role do usuário logado
-user_role = st.session_state.get('role', '')
-
-# Carregar credenciais do banco de dados
-db_user = st.secrets["database"]["user"]
-db_password = st.secrets["database"]["password"]
-
-# Conexão com o banco de dados
-db = conectaBanco(db_user, db_password)
+logo_carrefour()
+logo_century()
 
 def pagina_dsar(dados):
     if not dados:

@@ -1,22 +1,19 @@
 import streamlit as st
 
-from PIL import Image
 from streamlit_autorefresh import st_autorefresh
 from streamlit_option_menu import option_menu
 
-from conectaBanco import conectaBanco
-from cadastra_user import trocar_senha, adicionar_usuario
-from login import login, is_authenticated
-from api import atualizar_dados, buscar_dados
-from auxiliar import obter_ultima_atualizacao, atualizacao_periodica
 from pagina_dsar import pagina_dsar
 from pagina_cookies import pagina_cookies
-from aux_cookies import fetch_missing_data, processar_para_mongo
+from pagina_trocarSenha import trocar_senha
+from pagina_usuarios import gerenciar_usuarios
+from pagina_atualizar_cookies import fetch_missing_data, processar_para_mongo
 
-# Verifica se o usuário está autenticado
-if not is_authenticated():
-    login()
-    st.stop()
+from utils.login import login, is_authenticated
+from utils.conectaBanco import conectaBanco
+from utils.api import atualizar_dados, buscar_dados
+from utils.auxiliar import obter_ultima_atualizacao, atualizacao_periodica
+from utils.logos.import_logos import logo_carrefour, logo_century
 
 # Verifica a role do usuário logado
 user_role = st.session_state.get('role', '')
@@ -28,9 +25,14 @@ db_password = st.secrets["database"]["password"]
 # Conexão com o banco de dados
 collection = conectaBanco(db_user, db_password)
 
+# Verifica se o usuário está autenticado
+if not is_authenticated():
+    login(collection)
+    st.stop()
+
 # Carregar logos
-logo_carrefour = Image.open("logo.png")
-logo_century = Image.open("logo_century.png")
+logo_carrefour = logo_carrefour()
+logo_century = logo_century()
 
 # Configurações da página com o logo
 st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
@@ -77,7 +79,7 @@ with st.sidebar:
     menu_icons = ["bar-chart", "bar-chart", "key"]
 
     if user_role == "admin":
-        menu_options.append("Cadastrar Novo Usuário")
+        menu_options.append("Controle de usuários")
         menu_icons.append("person-plus")
         
         menu_options.append("Upload Cookies")
@@ -99,17 +101,17 @@ if selected_tab == "Dashboard DSAR":
 
 # Aba de Relatórios
 elif selected_tab == "Dashboard Cookies":
-    pagina_cookies()
+    pagina_cookies(collection)
             
 # Aba de Relatórios
 elif selected_tab == "Trocar Senha":
-    trocar_senha()
+    trocar_senha(collection)
             
 # Aba de Relatórios
-elif selected_tab == "Cadastrar Novo Usuário":        
-    adicionar_usuario()
+elif selected_tab == "Controle de usuários":        
+    gerenciar_usuarios(collection)
     
 # Aba de Relatórios
 elif selected_tab == "Upload Cookies":        
     fetch_missing_data()
-    processar_para_mongo()
+    processar_para_mongo(collection)
