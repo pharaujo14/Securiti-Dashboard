@@ -12,6 +12,7 @@ altair
 requests
 pymongo
 pytz
+psutil==7.0.0
 fpdf==1.7.2
 bcrypt
 pyperclip
