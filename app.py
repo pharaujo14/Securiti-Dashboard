@@ -35,7 +35,7 @@ logo_carrefour = logo_carrefour()
 logo_century = logo_century()
 
 # Configurações da página com o logo
-st.set_page_config(page_title="Century Data", page_icon="Century_mini_logo-32x32.png", layout="wide")
+st.set_page_config(page_title="Century Data", page_icon="./utils/logos/Century_mini_logo-32x32.png", layout="wide")
 
 # Atualizar a cada 5 minutos (300 segundos)
 count = st_autorefresh(interval=3600000, key="data_refresh")
