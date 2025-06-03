@@ -56,6 +56,7 @@ def buscar_dados_api():
     response = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
 
     if response.status_code == 200:
+        print("Resposta completa da API:", response.text)  # 👈 ADICIONE ESSA LINHA
         result = response.json()
         dados_extraidos = []
 
@@ -81,8 +82,8 @@ def get_ticket_data(ticket_id):
     url = f"https://app.securiti.ai/privaci/v1/admin/dsr/tickets/{ticket_id}"
     headers = {
         "x-tident": st.secrets["api"]["x_tident"],
-        "x-api-key": st.secrets["api"]["x_api_key"],
-        "x-api-secret": st.secrets["api"]["x_api_secret"],
+        "x-api-key": st.secrets["api"]["default_api_key"],
+        "x-api-secret": st.secrets["api"]["default_api_secret"],
         "accept": "application/json",
         "Content-Type": "application/json"
     }
@@ -133,7 +134,12 @@ def atualizar_dados(collection, collection_historico):
 
     # IDs que precisam ser adicionados ao MongoDB
     add_mongo = calcula_diferenca(dados_api, dados_mongo)
-
+    
+    print("Total de dados retornados da API:", len(dados_api))
+    print("Total de dados no Mongo:", len(dados_mongo))
+    print("Novos dados detectados:", len(add_mongo))
+    print("IDs com status alterado:", ids_status_alterados)
+    
     total_dados = len(add_mongo)
     for index, id in enumerate(add_mongo):
         dado = get_ticket_data(id)

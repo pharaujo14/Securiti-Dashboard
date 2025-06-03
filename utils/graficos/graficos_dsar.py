@@ -255,7 +255,13 @@ def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
 
         # Plotar o gráfico com matplotlib
         plt.figure(figsize=(12, 6))  # Tamanho ajustado para ocupar a largura total
-        plt.plot(df_contagem_dia_limited['Data'], df_contagem_dia_limited['Quantidade'], marker='.', linestyle='-', color='b')
+        plt.plot(
+            df_contagem_dia_limited['Data'].to_numpy(),
+            df_contagem_dia_limited['Quantidade'].to_numpy(),
+            marker='.',
+            linestyle='-',
+            color='b'
+        )
 
         # Ajuste do formato de data para DD-MM
         plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%d-%m'))

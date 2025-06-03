@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import altair_saver as alt_saver
 
 # ===========================
 # CONSENTS
