@@ -213,16 +213,18 @@ def grafico_barras_categoria_status(df):
                 categoria, id_raw = chave.split("--")
                 categoria = categoria.strip().lower()
 
-                # Mapeia variações para um nome padronizado
                 categoria_map = {
                     "essencial": "Essential",
                     "essential": "Essential",
-                    "publicidade para terceiros": "Advertising",
+                    "publicidade para terceiros": "Publicidade para Terceiros",
+                    "advertising": "Advertising",
                     "analytics & customization": "Analytics & Customization",
+                    "analytics & customisation": "Analytics & Customization",
                     "performance & functionality": "Performance & Functionality",
-                    # outros mapeamentos, se necessário
+                    "unclassified": "Unclassified",
                 }
-
+                
+                categoria = categoria.strip().lower()
                 categoria = categoria_map.get(categoria, categoria.title())
                 status_id = int(id_raw.strip())
                 status = status_map.get(status_id, "UNKNOWN")
@@ -239,6 +241,8 @@ def grafico_barras_categoria_status(df):
         return
 
     df_plot = pd.DataFrame(dados)
+    df_plot = df_plot[df_plot["Status"] != "NOACTION"]
+
 
     fig = px.bar(
         df_plot,
