@@ -2,8 +2,8 @@ import streamlit as st
 from datetime import datetime, timedelta
 import pandas as pd
 
-from utils.graficos.graficos_cookies import grafico_consents, grafico_categorias, grafico_paises, grafico_dominios
-from utils.pdf.pd_generator_cookies import gerar_pdf_cookies  # seu novo arquivo
+from utils.graficos.graficos_cookies import grafico_consents, grafico_categorias, grafico_paises, grafico_dominios,grafico_barras_categoria_status
+from utils.pdf.pd_generator_cookies import gerar_pdf_cookies  
 
 
 def pagina_cookies(db):
@@ -90,6 +90,64 @@ def pagina_cookies(db):
     if org_selecionada != "Todas":
         df_filtrado = df_filtrado[df_filtrado['organization'] == org_selecionada]
 
+    # === RESUMO DE CONSENTIMENTO (INÍCIO) ===
+    st.markdown("### Consentimento")
+
+    # Mapeamento de status
+    status_map = {
+        1: "GRANTED",
+        2: "DECLINED",
+        3: "WITHDRAWN",
+        4: "NOACTION",
+        5: "PENDING",
+        6: "NO_CONSENT"
+    }
+
+    # Inicializa contadores
+    status_counts = {label: 0 for label in status_map.values()}
+    total_itens = 0
+
+    for _, row in df_filtrado.iterrows():
+        items = row["metrics"].get("items_by_category_id", {})
+        for key, value in items.items():
+            try:
+                id_part = int(key.strip().split("--")[-1])
+                label = status_map.get(id_part)
+                if label:
+                    status_counts[label] += value
+                    total_itens += value
+            except:
+                continue
+
+    # Segurança contra divisão por zero
+    def pct(valor):
+        return round((valor / total_itens) * 100, 1) if total_itens > 0 else 0
+    
+    def formatar_milhar(valor):
+        return f"{valor:,}".replace(",", ".")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Action Rate", f"{pct(status_counts['GRANTED'] + status_counts['DECLINED'])}%", 
+                f"{formatar_milhar(status_counts['GRANTED'] + status_counts['DECLINED'])}")
+
+    with col2:
+        st.metric("Consent Rate", f"{pct(status_counts['GRANTED'])}%", f"{formatar_milhar(status_counts['GRANTED'])}")
+
+    with col3:
+        st.metric("Decline Rate", f"{pct(status_counts['DECLINED'])}%", f"{formatar_milhar(status_counts['DECLINED'])}")
+
+    with col4:
+        st.metric("No Action Rate", f"{pct(status_counts['NOACTION'])}%", f"{formatar_milhar(status_counts['NOACTION'])}")
+    
+    # === Categoria de Cookies e Status de Consentimento ===
+    st.write("")
+
+    st.markdown("### Categoria de Cookies e Status de Consentimento")
+    grafico_barras_categoria_status(df_filtrado)
+
+
     # === TOTAL DE CONSENTS ===
     total_consents = df_filtrado['total_consents'].sum()
     total_formatado = f"{total_consents:,.0f}".replace(",", ".")
@@ -111,8 +169,7 @@ def pagina_cookies(db):
             file_name=f"relatorio_cookies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
             mime="application/pdf"
         )
-
-
+        
     # === GRÁFICO DE DOMÍNIOS MAIS ACESSADOS (TOP 10) ===
     st.markdown("### Domínios mais acessados (Top 10)")
     

@@ -150,23 +150,59 @@ def calcular_metricas(df, data_ref):
     """Calcula métricas consolidadas de consentimento por organização."""
     resultados = []
     orgs = df['organization'].unique()
+
     for org in orgs:
-        subset = df[df['organization'] == org]
+        subset = df[df['organization'] == org].copy()
+
+        # Garantir que os campos necessários existam
+        if 'consent_scanned_props_name' not in subset.columns or 'consented_item_activity_id' not in subset.columns:
+            st.warning(f"⚠️ Campos necessários ausentes para org {org}")
+            continue
+
+        # Conversão segura de tipos
+        subset['consented_item_activity_id'] = pd.to_numeric(
+            subset['consented_item_activity_id'], errors='coerce'
+        )
+        subset['consent_scanned_props_name'] = subset['consent_scanned_props_name'].astype(str)
+
+        # Drop de nulos
+        subset = subset.dropna(subset=['consent_scanned_props_name', 'consented_item_activity_id'])
+
+        if subset.empty:
+            st.info(f"ℹ️ Nenhum dado válido para items_by_category_id da organização {org}")
+            items_by_category_id = {}
+        else:
+            agrupado = (
+                subset.groupby(['consent_scanned_props_name', 'consented_item_activity_id'])
+                .size()
+                .reset_index(name='count')
+            )
+
+            items_by_category_id = {
+                f"{row['consent_scanned_props_name']} -- {int(row['consented_item_activity_id'])}": int(row['count'])
+                for _, row in agrupado.iterrows()
+            }
+
         metricas = {
             "date": data_ref.strftime("%Y-%m-%d"),
             "organization": org,
             "metrics": {
                 "total_consents": subset['consent_id'].nunique(),
                 "unique_users": subset['user_uuid'].nunique(),
-                "implicit_ratio": float((subset['implicit_consent'] == True).sum() / len(subset)),
+                "implicit_ratio": float((subset['implicit_consent'] == True).sum() / len(subset)) if len(subset) > 0 else 0.0,
                 "gpc_enabled": int((subset['gpc_signal'] == True).sum()),
                 "categories": subset['consent_scanned_props_category'].value_counts().to_dict(),
                 "countries": subset['consent_geo_location_country'].value_counts().to_dict(),
-                "domains": subset['domain_url'].value_counts().to_dict()
+                "domains": subset['domain_url'].value_counts().to_dict(),
+                "items_by_category_id": items_by_category_id
             }
         }
+
+        st.write(f"✅ {org} - itens agrupados: {len(items_by_category_id)}")  # debug
         resultados.append(metricas)
+
     return resultados
+
 
 def processar_para_mongo(db):
     

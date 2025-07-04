@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import plotly.express as px
 
 # ===========================
 # CONSENTS
@@ -164,7 +165,7 @@ def gerar_grafico_dominios(df_filtrado):
     if df_dominios.empty:
         return None
 
-    df_top = df_dominios.groupby("Domínio")["Valor"].sum().sort_values(ascending=False).head(10).reset_index()
+    df_top = df_dominios.groupby("Domínio")["Valor"].sum().sort_values(ascending=False).head(20).reset_index()
     df_top["Domínio"] = pd.Categorical(df_top["Domínio"], categories=df_top["Domínio"], ordered=True)
 
     chart = alt.Chart(df_top).mark_bar(color="#0000CD").encode(
@@ -190,3 +191,77 @@ def grafico_dominios(df_filtrado):
         st.altair_chart(chart, use_container_width=True)
     else:
         st.write("Sem dados de domínios para exibir.")
+
+def grafico_barras_categoria_status(df):
+
+    status_map = {
+        1: "GRANTED",
+        2: "DECLINED",
+        3: "WITHDRAWN",
+        4: "NOACTION",
+        5: "PENDING",
+        6: "NO_CONSENT"
+    }
+
+    # Construir DataFrame para plotagem
+    dados = []
+
+    for _, row in df.iterrows():
+        items = row["metrics"].get("items_by_category_id", {})
+        for chave, qtd in items.items():
+            try:
+                categoria, id_raw = chave.split("--")
+                categoria = categoria.strip().lower()
+
+                # Mapeia variações para um nome padronizado
+                categoria_map = {
+                    "essencial": "Essential",
+                    "essential": "Essential",
+                    "publicidade para terceiros": "Advertising",
+                    "analytics & customization": "Analytics & Customization",
+                    "performance & functionality": "Performance & Functionality",
+                    # outros mapeamentos, se necessário
+                }
+
+                categoria = categoria_map.get(categoria, categoria.title())
+                status_id = int(id_raw.strip())
+                status = status_map.get(status_id, "UNKNOWN")
+                dados.append({
+                    "Categoria": categoria,
+                    "Status": status,
+                    "Quantidade": qtd
+                })
+            except:
+                continue
+
+    if not dados:
+        st.info("Sem dados suficientes para o gráfico.")
+        return
+
+    df_plot = pd.DataFrame(dados)
+
+    fig = px.bar(
+        df_plot,
+        x="Quantidade",
+        y="Categoria",
+        color="Status",
+        orientation="h",
+        barmode="group",
+        color_discrete_map={
+            "GRANTED": "#6699FF",
+            "DECLINED": "#FF6666",
+            "WITHDRAWN": "#FFCC66",
+            "NOACTION": "#999999",
+            "PENDING": "#CCCCFF",
+            "NO_CONSENT": "#CCCCCC"
+        },
+        title=None
+    )
+
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title=None,
+        height=600
+    )
+
+    st.plotly_chart(fig, use_container_width=True)

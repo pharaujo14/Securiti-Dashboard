@@ -124,6 +124,10 @@ def atualizar_dados(collection, collection_historico):
     # Atualiza o campo status e published_at para os IDs que mudaram
     for id_alterado in ids_status_alterados:
         dado = get_ticket_data(id_alterado)
+        if not dado:
+            print(f"[WARN] dado não encontrado para ID {id_alterado}")
+            continue
+
         novo_status = ajustar_status(dado.get("status"))
         novo_published_at = dado.get("published_at")
 
@@ -143,6 +147,10 @@ def atualizar_dados(collection, collection_historico):
     total_dados = len(add_mongo)
     for index, id in enumerate(add_mongo):
         dado = get_ticket_data(id)
+        if not dado:
+            print(f"[WARN] dado ausente ao tentar adicionar ID {id}")
+            continue
+
         dado_filtrado = {
             "org_unit_name": dado.get("org_unit_name"),
             "type_tags": dado.get("type_tags"),
@@ -156,6 +164,7 @@ def atualizar_dados(collection, collection_historico):
 
         if not collection.find_one({"id": dado_filtrado["id"]}):  
             collection.insert_one(dado_filtrado)
+
 
     # Registrar a atualização no histórico
     registrar_atualizacao(collection_historico)
