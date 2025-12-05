@@ -8,42 +8,81 @@ import plotly.express as px
 # ===========================
 
 def gerar_grafico_consents(df_filtrado):
-    df_group = df_filtrado.groupby('organization_label')['total_consents'].sum().reset_index()
-    df_group['total_formatado'] = df_group['total_consents'].apply(lambda x: f'{x / 1_000_000:.1f}M'.replace('.', ','))
-    df_group = df_group.sort_values(by='total_consents', ascending=False)
+    # segurança: se vier vazio, não tenta gerar nada
+    if df_filtrado.empty:
+        return None
 
-    df_group['organization_label'] = pd.Categorical(
-        df_group['organization_label'], categories=df_group['organization_label'], ordered=True
+    # garante que a coluna existe e é numérica
+    if "total_consents" not in df_filtrado.columns:
+        return None
+
+    df_local = df_filtrado.copy()
+    df_local["total_consents"] = pd.to_numeric(
+        df_local["total_consents"], errors="coerce"
+    ).replace([np.inf, -np.inf], 0).fillna(0)
+
+    # se depois disso tudo continuar tudo zero, podemos até mostrar gráfico,
+    # mas pelo menos não quebra
+    df_group = (
+        df_local.groupby("organization_label")["total_consents"]
+        .sum()
+        .reset_index()
     )
 
-    chart = alt.Chart(df_group).mark_bar(color='#0000CD').encode(
-        x=alt.X('organization_label:N', title='', sort=list(df_group['organization_label'])),
+    if df_group.empty:
+        return None
+
+    df_group["total_formatado"] = df_group["total_consents"].apply(
+        lambda x: f'{x / 1_000_000:.1f}M'.replace(".", ",")
+    )
+    df_group = df_group.sort_values(by="total_consents", ascending=False)
+
+    df_group["organization_label"] = pd.Categorical(
+        df_group["organization_label"],
+        categories=df_group["organization_label"],
+        ordered=True,
+    )
+
+    # protege o max contra NaN
+    max_val = df_group["total_consents"].max()
+    if pd.isna(max_val) or max_val <= 0:
+        max_val = 1  # evita domain com NaN ou 0
+
+    chart = alt.Chart(df_group).mark_bar(color="#0000CD").encode(
+        x=alt.X(
+            "organization_label:N",
+            title="",
+            sort=list(df_group["organization_label"]),
+        ),
         y=alt.Y(
-            'total_consents:Q',
-            title='',
-            axis=alt.Axis(labelExpr="datum.value >= 1000000 ? (datum.value / 1000000) + 'M' : datum.value"),
-            scale=alt.Scale(domain=[0, df_group['total_consents'].max() * 1.1])
+            "total_consents:Q",
+            title="",
+            axis=alt.Axis(
+                labelExpr="datum.value >= 1000000 ? (datum.value / 1000000) + 'M' : datum.value"
+            ),
+            scale=alt.Scale(domain=[0, max_val * 1.1]),
         ),
         tooltip=[
-            alt.Tooltip('organization_label:N', title='Organização'),
-            alt.Tooltip('total_consents:Q', title='Total de Consents', format=',')
-        ]
+            alt.Tooltip("organization_label:N", title="Organização"),
+            alt.Tooltip("total_consents:Q", title="Total de Consents", format=","),
+        ],
     ).properties(width=600, height=400)
 
     text = chart.mark_text(
-        align='center',
-        baseline='bottom',
+        align="center",
+        baseline="bottom",
         dy=-4,
-        color='black'
-    ).encode(
-        text='total_formatado:N'
-    )
+        color="black",
+    ).encode(text="total_formatado:N")
 
     return chart + text
 
 
 def grafico_consents(df_filtrado):
     chart = gerar_grafico_consents(df_filtrado)
+    if chart is None:
+        st.info("Sem dados para exibir o gráfico de consents por organização.")
+        return
     st.altair_chart(chart, use_container_width=True)
 
 
