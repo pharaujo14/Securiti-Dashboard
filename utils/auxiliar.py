@@ -248,7 +248,7 @@ class PDF(FPDF):
     def chapter_title(self, title):
         self.set_font("Arial", "B", 12)
         # Normaliza o texto antes de passar para o PDF
-        self.cell(0, 10, f"Sessão: {normalize_text(title)}", 0, 1, 'C')
+        self.cell(0, 10, f"Seção: {normalize_text(title)}", 0, 1, 'C')
         self.ln(4)
 
     def question_format(self, number, question, response):
