@@ -2,7 +2,13 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 from utils.auxiliar import filtrar_dados, calcular_tempo_medio
-from utils.graficos.graficos_dsar import grafico_tipo_solicitacao, contagemStatus, atendimentosDia, solicitacoesExclusao, tendenciaAtendimentos
+from utils.graficos.graficos_dsar import (
+    solicitacoesExclusao,
+    grafico_tipo_solicitacao_interativo,
+    contagemStatus_interativo,
+    atendimentosDia_interativo,
+    tendenciaAtendimentos_interativo,
+)
 from utils.pdf.pdf_generator import gerar_pdf
 from utils.logos.import_logos import logo_carrefour, logo_century
 
@@ -42,37 +48,37 @@ def pagina_dsar(dados):
     # Filtragem de dados
     dados_filtrados = filtrar_dados(dados, org_selecionada, data_inicio, data_fim)
 
-    # GRÁFICOS NA TELA PRINCIPAL
+    # GRÁFICOS NA TELA PRINCIPAL (interativos — hover, zoom, exportar imagem)
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("<h4 style='text-align: center;'>Tipo de Solicitação</h4>", unsafe_allow_html=True)
-        img_buffer = grafico_tipo_solicitacao(dados_filtrados)
-        if img_buffer:
-            st.image(img_buffer, use_column_width=True)
+        fig = grafico_tipo_solicitacao_interativo(dados_filtrados)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.write("Sem dados para exibir.")
 
     with col2:
         st.markdown("<h4 style='text-align: center;'>Contagem de Status</h4>", unsafe_allow_html=True)
-        img_buffer = contagemStatus(dados_filtrados)
-        if img_buffer:
-            st.image(img_buffer, use_column_width=True)
+        fig = contagemStatus_interativo(dados_filtrados)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.write("Sem dados para exibir.")
 
     # GRÁFICO DE ATENDIMENTOS POR DIA
     st.markdown("<h4 style='text-align: center;'>Atendimentos por Dia (Últimos 30 dias)</h4>", unsafe_allow_html=True)
-    img_buffer = atendimentosDia(dados_filtrados)
-    if img_buffer:
-        st.image(img_buffer)
+    fig = atendimentosDia_interativo(dados_filtrados)
+    if fig:
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.write("Sem dados para exibir.")
 
     # GRÁFICO DE TENDÊNCIA DE ATENDIMENTOS
     st.markdown("<h4 style='text-align: center;'>Linha de Tendência de Atendimentos por Dia</h4>", unsafe_allow_html=True)
-    img_buffer = tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados)
-    if img_buffer:
-        st.image(img_buffer, use_column_width=True)
+    fig = tendenciaAtendimentos_interativo(data_inicio, data_fim, dados_filtrados)
+    if fig:
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.write("Sem dados para exibir.")
 

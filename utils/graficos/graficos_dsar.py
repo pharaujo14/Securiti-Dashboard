@@ -3,11 +3,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 import altair as alt
+import plotly.express as px
+import plotly.graph_objects as go
 
 from io import BytesIO
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
 from datetime import datetime, timedelta
+
+
+# Paleta e template usados nos gráficos interativos (Plotly), pra manter uma
+# identidade visual consistente entre eles.
+COR_PRIMARIA = "#0000CD"
+TEMPLATE_PLOTLY = "plotly_white"
 
 
 # Dicionário de tradução dos valores de type_tags
@@ -287,3 +295,155 @@ def tendenciaAtendimentos(data_inicio, data_fim, dados_filtrados):
     else:
         st.write("Sem dados para exibir.")
         return None
+
+
+# ============================================================================
+# VERSÕES INTERATIVAS (Plotly) — usadas na TELA do dashboard.
+#
+# As funções acima (grafico_tipo_solicitacao, contagemStatus, atendimentosDia,
+# tendenciaAtendimentos) continuam existindo exatamente como estavam, porque
+# utils/pdf/pdf_generator.py depende delas para gerar imagens estáticas PNG
+# dentro do relatório em PDF (FPDF não sabe desenhar um gráfico interativo).
+#
+# As funções abaixo fazem o MESMO preparo de dados, mas devolvem uma figura
+# Plotly (em vez de um buffer de imagem), pra ganhar hover, zoom e uma
+# aparência mais moderna na tela. Use st.plotly_chart(fig, use_container_width=True)
+# para exibi-las.
+# ============================================================================
+
+def grafico_tipo_solicitacao_interativo(dados_filtrados):
+    tipos_solicitacao = [traducoes[dado["type_tags"]] for dado in dados_filtrados if dado["type_tags"] in traducoes]
+    df_tipos_solicitacao = pd.DataFrame(tipos_solicitacao, columns=["Tipo de Solicitação"])
+    contagem_tipos = df_tipos_solicitacao["Tipo de Solicitação"].value_counts()
+
+    if contagem_tipos.empty:
+        return None
+
+    df_contagem_tipos = contagem_tipos.reset_index()
+    df_contagem_tipos.columns = ['Tipo de Solicitação', 'Quantidade']
+
+    fig = px.bar(
+        df_contagem_tipos,
+        x='Quantidade', y='Tipo de Solicitação',
+        orientation='h', text='Quantidade',
+        color_discrete_sequence=[COR_PRIMARIA],
+        template=TEMPLATE_PLOTLY,
+    )
+    fig.update_traces(textposition='outside', hovertemplate='%{y}: %{x}<extra></extra>')
+    fig.update_layout(
+        xaxis_title=None, yaxis_title=None,
+        yaxis={'categoryorder': 'total ascending'},
+        showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
+    )
+    return fig
+
+
+def contagemStatus_interativo(dados_filtrados):
+    status_solicitacao = [dado["status"] for dado in dados_filtrados]
+    df_status_solicitacao = pd.DataFrame(status_solicitacao, columns=["Status"])
+    contagem_status = df_status_solicitacao["Status"].value_counts()
+
+    if contagem_status.empty:
+        return None
+
+    df_contagem_status = contagem_status.reset_index()
+    df_contagem_status.columns = ['Status', 'Quantidade']
+
+    fig = px.bar(
+        df_contagem_status,
+        x='Quantidade', y='Status',
+        orientation='h', text='Quantidade',
+        color_discrete_sequence=[COR_PRIMARIA],
+        template=TEMPLATE_PLOTLY,
+    )
+    fig.update_traces(textposition='outside', hovertemplate='%{y}: %{x}<extra></extra>')
+    fig.update_layout(
+        xaxis_title=None, yaxis_title=None,
+        yaxis={'categoryorder': 'total ascending'},
+        showlegend=False, margin=dict(l=10, r=10, t=10, b=10),
+    )
+    return fig
+
+
+def atendimentosDia_interativo(dados_filtrados):
+    datas_atendimento = [dado["created_at"] for dado in dados_filtrados]
+    df_atendimentos = pd.DataFrame(datas_atendimento, columns=["Data de Atendimento"])
+
+    try:
+        df_atendimentos['Data de Atendimento'] = pd.to_datetime(df_atendimentos['Data de Atendimento'], unit='ms')
+    except ValueError:
+        df_atendimentos['Data de Atendimento'] = pd.to_datetime(df_atendimentos['Data de Atendimento'], format='%d/%m/%Y %H:%M:%S')
+
+    contagem_atendimentos_por_dia = df_atendimentos['Data de Atendimento'].dt.date.value_counts().sort_index()
+
+    if contagem_atendimentos_por_dia.empty:
+        return None
+
+    df_contagem_dia = contagem_atendimentos_por_dia.reset_index()
+    df_contagem_dia.columns = ['Data', 'Quantidade']
+
+    full_range = pd.date_range(start=df_atendimentos['Data de Atendimento'].min().date(),
+                                end=df_atendimentos['Data de Atendimento'].max().date(), freq='D')
+    df_contagem_dia = df_contagem_dia.set_index('Data').reindex(full_range, fill_value=0).reset_index()
+    df_contagem_dia.columns = ['Data', 'Quantidade']
+    df_contagem_dia = df_contagem_dia.tail(30)
+
+    fig = px.bar(
+        df_contagem_dia,
+        x='Data', y='Quantidade', text='Quantidade',
+        color_discrete_sequence=[COR_PRIMARIA],
+        template=TEMPLATE_PLOTLY,
+    )
+    fig.update_traces(textposition='outside', hovertemplate='%{x|%d/%m/%Y}: %{y}<extra></extra>')
+    fig.update_layout(
+        xaxis_title=None, yaxis_title=None,
+        xaxis=dict(tickformat='%d-%m'),
+        margin=dict(l=10, r=10, t=10, b=10),
+    )
+    return fig
+
+
+def tendenciaAtendimentos_interativo(data_inicio, data_fim, dados_filtrados):
+    today = pd.to_datetime(datetime.now()).tz_localize('America/Sao_Paulo').date()
+
+    datas_atendimento = [dado["created_at"] for dado in dados_filtrados]
+    df_atendimentos = pd.DataFrame(datas_atendimento, columns=["Data de Atendimento"])
+    df_atendimentos['Data de Atendimento'] = pd.to_datetime(df_atendimentos['Data de Atendimento'], format='%d/%m/%Y %H:%M:%S')
+
+    contagem_atendimentos_por_dia = df_atendimentos['Data de Atendimento'].dt.date.value_counts().sort_index()
+
+    data_inicio_ts = pd.Timestamp(data_inicio).tz_localize('America/Sao_Paulo')
+    data_fim_ts = pd.Timestamp(data_fim).tz_localize('America/Sao_Paulo')
+
+    if contagem_atendimentos_por_dia.empty:
+        st.write("Sem dados para exibir.")
+        return None
+
+    df_contagem_dia = contagem_atendimentos_por_dia.reset_index()
+    df_contagem_dia.columns = ['Data', 'Quantidade']
+    df_contagem_dia['Data'] = pd.to_datetime(df_contagem_dia['Data']).dt.tz_localize('America/Sao_Paulo')
+    df_contagem_dia.set_index('Data', inplace=True)
+
+    if today not in df_contagem_dia.index.date:
+        df_contagem_dia.loc[pd.Timestamp(today).tz_localize('America/Sao_Paulo')] = 0
+
+    full_range = pd.date_range(start=df_contagem_dia.index.min(), end=df_contagem_dia.index.max())
+    df_contagem_dia = df_contagem_dia.reindex(full_range, fill_value=0)
+    df_contagem_dia.index.name = 'Data'
+
+    df_contagem_dia_limited = df_contagem_dia.loc[data_inicio_ts:data_fim_ts].reset_index()
+
+    fig = px.line(
+        df_contagem_dia_limited,
+        x='Data', y='Quantidade',
+        markers=True,
+        color_discrete_sequence=[COR_PRIMARIA],
+        template=TEMPLATE_PLOTLY,
+    )
+    fig.update_traces(hovertemplate='%{x|%d/%m/%Y}: %{y}<extra></extra>')
+    fig.update_layout(
+        xaxis_title=None, yaxis_title=None,
+        xaxis=dict(tickformat='%d-%m'),
+        margin=dict(l=10, r=10, t=10, b=10),
+    )
+    return fig
