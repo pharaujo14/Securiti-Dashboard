@@ -10,13 +10,20 @@ from utils.graficos.graficos_cookies import (
     grafico_barras_categoria_status
 )
 
-from utils.pdf.pd_generator_cookies import gerar_pdf_cookies  
+from utils.pdf.pd_generator_cookies import gerar_pdf_cookies
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _carregar_dados_cookies(_collection):
+    """Lê a collection de cookies consolidados, com cache de 5 min.
+    Ver a mesma explicação do underscore em utils/api.buscar_dados."""
+    return list(_collection["consolidado_cookies"].find({}))
 
 
 def pagina_cookies(db):
 
     # === CARREGAR DADOS ===
-    dados = list(db["consolidado_cookies"].find({}))
+    dados = _carregar_dados_cookies(db)
     if not dados:
         st.warning("Nenhum dado encontrado.")
         return

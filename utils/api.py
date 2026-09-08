@@ -171,21 +171,30 @@ def atualizar_dados(collection, collection_historico):
 
     print("Dados atualizados com sucesso no MongoDB.")
 
-def buscar_dados(collection):
+@st.cache_data(ttl=300, show_spinner=False)
+def buscar_dados(_collection):
+    """Lê os tickets do Mongo, com cache de 5 minutos.
+
+    O underscore em `_collection` é convenção do Streamlit para dizer "não tente
+    gerar uma chave de cache a partir deste argumento" (um objeto de conexão do
+    pymongo não é "hasheável" da forma que o cache_data espera). O cache em si é
+    baseado no corpo da função + nos outros argumentos (aqui não há outros), então
+    toda vez que o TTL de 5 min expira, ele busca de novo — isso é suficiente,
+    já que agora quem atualiza os dados de verdade é o job agendado (scripts/sync_dsar.py),
+    não mais o carregamento da página.
+
+    Se precisar ver dados novíssimos na hora (ex.: logo após clicar em "Forçar
+    atualização"), chame `buscar_dados.clear()` antes de chamar esta função de novo.
+    """
+    try:
+        _collection.create_index("id", unique=True)
+    except Exception:
+        pass
 
     try:
-        # Criar índice único no campo "id" para evitar duplicações
-        collection.create_index("id", unique=True)
-    except:
-        print()
-
-    try:
-        # Recupera todos os documentos da coleção
-        dados = list(collection.find())
-        # Opcional: Imprime a quantidade de documentos recuperados
+        dados = list(_collection.find())
         print(f"{len(dados)} documentos encontrados.")
         return dados
-
     except Exception as e:
         print(f"Erro ao buscar dados: {e}")
         return []

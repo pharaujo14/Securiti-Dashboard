@@ -3,3 +3,5 @@
 *.pdf
 *.json
 \.streamlit
+troca-senha-manual.py
+PERFORMANCE_README.md

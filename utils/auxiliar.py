@@ -11,8 +11,6 @@ import unicodedata
 from fpdf import FPDF
 from datetime import datetime, timedelta
 
-from pagina_atualizar_cookies import fetch_missing_data, processar_para_mongo
-
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
 
@@ -193,14 +191,15 @@ def calcular_tempo_medio(dados):
     
     return round(tempo_medio, 2) if not pd.isna(tempo_medio) else 0
 
-def atualizacao_periodica():
-    agora = datetime.now()
+# Observação: a função atualizacao_periodica() que existia aqui foi removida.
+# Ela tentava rodar a sincronização de cookies "às 4h da manhã", mas só
+# executava se alguém estivesse com o navegador aberto exatamente nesse minuto
+# (o que praticamente nunca acontecia no Streamlit Community Cloud) — e, além
+# disso, chamava processar_para_mongo() sem o argumento `db` que a função
+# exige, então mesmo nas raras vezes em que rodava, ia estourar erro. Essa
+# sincronização agora é feita de verdade por um job agendado no GitHub Actions
+# (ver scripts/sync_cookies.py e .github/workflows/sync-cookies.yml).
 
-    # Se for 04:00 da manhã, executa as funções
-    if agora.hour == 4 and agora.minute == 0:
-        fetch_missing_data()
-        processar_para_mongo()
-        
 # Função para normalizar texto
 def normalize_text(text):
     """

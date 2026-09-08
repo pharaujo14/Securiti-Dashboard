@@ -1,0 +1,32 @@
+name: Sync DSAR
+
+on:
+  schedule:
+    # A cada hora, no minuto 0 (UTC). Substitui o antigo autorefresh/atualizacao_periodica.
+    - cron: "0 * * * *"
+  workflow_dispatch: {}   # permite disparar manualmente pela aba "Actions" no GitHub
+
+jobs:
+  sync-dsar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: pip install -r scripts/requirements.txt
+
+      - name: Rodar sincronização de DSAR
+        working-directory: scripts
+        run: python sync_dsar.py
+        env:
+          MONGO_USER: ${{ secrets.MONGO_USER }}
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          SECURITI_X_TIDENT: ${{ secrets.SECURITI_X_TIDENT }}
+          SECURITI_DEFAULT_API_KEY: ${{ secrets.SECURITI_DEFAULT_API_KEY }}
+          SECURITI_DEFAULT_API_SECRET: ${{ secrets.SECURITI_DEFAULT_API_SECRET }}

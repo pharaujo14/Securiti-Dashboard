@@ -1,0 +1,44 @@
+name: Sync Cookies
+
+on:
+  schedule:
+    # 07:00 UTC = 04:00 em Brasília (equivalente ao horário que o app tentava rodar
+    # sozinho antes, só que agora de forma garantida).
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}   # permite disparar manualmente pela aba "Actions" no GitHub
+
+jobs:
+  sync-cookies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: pip install -r scripts/requirements.txt
+
+      - name: Rodar sincronização de Cookies
+        working-directory: scripts
+        run: python sync_cookies.py
+        env:
+          MONGO_USER: ${{ secrets.MONGO_USER }}
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          SECURITI_X_TIDENT: ${{ secrets.SECURITI_X_TIDENT }}
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+          PROPERTY_API_KEY: ${{ secrets.PROPERTY_API_KEY }}
+          PROPERTY_API_SECRET: ${{ secrets.PROPERTY_API_SECRET }}
+          PROPERTY_ORG_ID: ${{ secrets.PROPERTY_ORG_ID }}
+          CARREFOUR_API_KEY: ${{ secrets.CARREFOUR_API_KEY }}
+          CARREFOUR_API_SECRET: ${{ secrets.CARREFOUR_API_SECRET }}
+          CARREFOUR_ORG_ID: ${{ secrets.CARREFOUR_ORG_ID }}
+          SAMS_API_KEY: ${{ secrets.SAMS_API_KEY }}
+          SAMS_API_SECRET: ${{ secrets.SAMS_API_SECRET }}
+          SAMS_ORG_ID: ${{ secrets.SAMS_ORG_ID }}
+          CCI_API_KEY: ${{ secrets.CCI_API_KEY }}
+          CCI_API_SECRET: ${{ secrets.CCI_API_SECRET }}
+          CCI_ORG_ID: ${{ secrets.CCI_ORG_ID }}
