@@ -91,19 +91,30 @@ def grafico_consents(df_filtrado):
 # CATEGORIAS
 # ===========================
 
-def gerar_grafico_categorias(df_filtrado):     
+def gerar_grafico_categorias(df_filtrado):
     categorias_data = []
+    dias_sem_detalhe = 0
+
     for _, row in df_filtrado.iterrows():
-        dominios = row['metrics'].get('domains', {})
-        categorias = row['metrics'].get('categories', {})
-        for dom in dominios.keys():
-            for cat, val in categorias.items():
-                categorias_data.append({"Domínio": dom, "Categoria": cat, "Valor": val})
+        # domain_categories é o cruzamento real domínio x categoria (gerado
+        # pelo job de ingestão). Dias sincronizados ANTES dessa correção não
+        # têm esse campo — pulamos e avisamos quantos dias ficaram de fora,
+        # em vez de voltar a inventar números combinando domains x categories.
+        domain_categories = row['metrics'].get('domain_categories')
+        if not domain_categories:
+            dias_sem_detalhe += 1
+            continue
+        for item in domain_categories:
+            categorias_data.append({
+                "Domínio": item.get("domain"),
+                "Categoria": item.get("categoria"),
+                "Valor": item.get("valor", 0),
+            })
 
     df_categorias = pd.DataFrame(categorias_data)
 
     if df_categorias.empty:
-        return None
+        return None, dias_sem_detalhe
 
     df_categorias = df_categorias.groupby(["Domínio", "Categoria"]).sum().reset_index()
     top5_dominios = df_categorias.groupby("Domínio")["Valor"].sum().nlargest(5).index.tolist()
@@ -126,13 +137,19 @@ def gerar_grafico_categorias(df_filtrado):
         ]
     ).properties(width=700, height=400)
 
-    return chart
+    return chart, dias_sem_detalhe
 
 
 def grafico_categorias(df_filtrado):
-    chart = gerar_grafico_categorias(df_filtrado)
+    chart, dias_sem_detalhe = gerar_grafico_categorias(df_filtrado)
     if chart:
         st.altair_chart(chart, use_container_width=True)
+        if dias_sem_detalhe:
+            st.caption(
+                f"⚠️ {dias_sem_detalhe} dia(s) no período selecionado foram sincronizados antes da "
+                "correção do cruzamento domínio × categoria e não entraram nesse gráfico. "
+                "Rode o backfill para incluí-los."
+            )
     else:
         st.write("Sem dados de categorias para exibir.")
 

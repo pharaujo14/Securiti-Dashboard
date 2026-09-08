@@ -191,6 +191,32 @@ def calcular_metricas(df, data_ref):
                 for _, row in agrupado.iterrows()
             }
 
+        # Cruzamento REAL domínio x categoria (quantos consents da categoria X
+        # vieram do domínio Y). Antes, o gráfico "Categorias de Cookies por
+        # Domínios" tentava reconstruir isso combinando `domains` e `categories`
+        # (que são dois agregados independentes do dia inteiro) — o resultado
+        # era todo domínio do dia recebendo o mesmo valor de cada categoria,
+        # o que "espelhava" domínios da mesma organização. Guardamos como
+        # lista de registros (não como dict aninhado por domínio) porque
+        # domínio contém ponto (ex.: "carrefour.com.br"), e chave de campo
+        # com ponto no Mongo é melhor evitar.
+        if subset.empty or "domain_url" not in subset.columns or "consent_scanned_props_category" not in subset.columns:
+            domain_categories = []
+        else:
+            agrupado_dom_cat = (
+                subset.groupby(["domain_url", "consent_scanned_props_category"])
+                .size()
+                .reset_index(name="count")
+            )
+            domain_categories = [
+                {
+                    "domain": row["domain_url"],
+                    "categoria": row["consent_scanned_props_category"],
+                    "valor": int(row["count"]),
+                }
+                for _, row in agrupado_dom_cat.iterrows()
+            ]
+
         resultados.append({
             "date": data_ref.strftime("%Y-%m-%d"),
             "organization": org,
@@ -203,6 +229,7 @@ def calcular_metricas(df, data_ref):
                 "countries": subset["consent_geo_location_country"].value_counts().to_dict(),
                 "domains": subset["domain_url"].value_counts().to_dict(),
                 "items_by_category_id": items_by_category_id,
+                "domain_categories": domain_categories,
             },
         })
     return resultados
