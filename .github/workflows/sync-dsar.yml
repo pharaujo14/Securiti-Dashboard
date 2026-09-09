@@ -2,8 +2,13 @@ name: Sync DSAR
 
 on:
   schedule:
-    # A cada hora, no minuto 0 (UTC). Substitui o antigo autorefresh/atualizacao_periodica.
-    - cron: "0 * * * *"
+    # Minuto 17 (não 0!) — rodar exatamente no topo da hora é o pior horário
+    # possível no GitHub Actions: é quando a maioria dos repositórios do
+    # mundo também agenda jobs, então o disparo atrasa muito (e se atrasar
+    # demais, aquele "tick" é descartado, não fica na fila). Um minuto
+    # quebrado reduz bastante essa fila. Ver:
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+    - cron: "17 * * * *"
   workflow_dispatch: {}   # permite disparar manualmente pela aba "Actions" no GitHub
 
 jobs:

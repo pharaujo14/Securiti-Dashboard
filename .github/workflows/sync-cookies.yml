@@ -2,9 +2,9 @@ name: Sync Cookies
 
 on:
   schedule:
-    # 07:00 UTC = 04:00 em Brasília (equivalente ao horário que o app tentava rodar
-    # sozinho antes, só que agora de forma garantida).
-    - cron: "0 7 * * *"
+    # 07:13 UTC (minuto quebrado, não 0 — ver comentário em sync-dsar.yml)
+    # = ~04:13 em Brasília.
+    - cron: "13 7 * * *"
   workflow_dispatch: {}   # permite disparar manualmente pela aba "Actions" no GitHub
 
 jobs:
